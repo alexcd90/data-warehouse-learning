@@ -1,12 +1,12 @@
--- 交易域用户商品粒度退单最近1日汇总表
-SET 'execution.checkpointing.interval' = '100s';
-SET 'table.exec.state.ttl'= '8640000';
+﻿SET 'execution.checkpointing.interval' = '100s';
+SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
 SET 'table.exec.mini-batch.size' = '10000';
 SET 'table.local-time-zone' = 'Asia/Shanghai';
-SET 'table.exec.sink.not-null-enforcer'='DROP';
+SET 'table.exec.sink.not-null-enforcer' = 'DROP';
 SET 'table.exec.sink.upsert-materialize' = 'NONE';
+SET 'execution.runtime-mode' = 'batch';
 
 CREATE CATALOG paimon_hive WITH (
     'type' = 'paimon',
@@ -16,43 +16,40 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
+USE CATALOG paimon_hive;
 
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS dws;
+CREATE DATABASE IF NOT EXISTS dws;
 
 CREATE TABLE IF NOT EXISTS dws.dws_trade_user_sku_order_refund_1d_full(
-    `user_id`                    BIGINT COMMENT '用户id',
-    `sku_id`                     BIGINT COMMENT 'sku_id',
-    `k1`                         STRING COMMENT '分区字段',
-    `sku_name`                   STRING COMMENT 'sku名称',
-    `category1_id`               BIGINT COMMENT '一级分类id',
-    `category1_name`             STRING COMMENT '一级分类名称',
-    `category2_id`               BIGINT COMMENT '一级分类id',
-    `category2_name`             STRING COMMENT '一级分类名称',
-    `category3_id`               BIGINT COMMENT '一级分类id',
-    `category3_name`             STRING COMMENT '一级分类名称',
-    `tm_id`                      BIGINT COMMENT '品牌id',
-    `tm_name`                    STRING COMMENT '品牌名称',
-    `order_refund_count_1d`      BIGINT COMMENT '最近1日退单次数',
-    `order_refund_num_1d`        BIGINT COMMENT '最近1日退单件数',
-    `order_refund_amount_1d`     DECIMAL(16, 2) COMMENT '最近1日退单金额',
-    PRIMARY KEY (`user_id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
+    `user_id` BIGINT COMMENT 'user id',
+    `sku_id` BIGINT COMMENT 'sku id',
+    `k1` STRING COMMENT 'partition field',
+    `sku_name` STRING COMMENT 'sku name',
+    `category1_id` BIGINT COMMENT 'category1 id',
+    `category1_name` STRING COMMENT 'category1 name',
+    `category2_id` BIGINT COMMENT 'category2 id',
+    `category2_name` STRING COMMENT 'category2 name',
+    `category3_id` BIGINT COMMENT 'category3 id',
+    `category3_name` STRING COMMENT 'category3 name',
+    `tm_id` BIGINT COMMENT 'tm id',
+    `tm_name` STRING COMMENT 'tm name',
+    `order_refund_count_1d` BIGINT COMMENT 'daily refund count',
+    `order_refund_num_1d` BIGINT COMMENT 'daily refund sku num',
+    `order_refund_amount_1d` DECIMAL(16, 2) COMMENT 'daily refund amount',
+    PRIMARY KEY (`user_id`, `sku_id`, `k1`) NOT ENFORCED
+) PARTITIONED BY (`k1`) WITH (
     'connector' = 'paimon',
     'metastore.partitioned-table' = 'true',
     'file.format' = 'parquet',
     'write-buffer-size' = '512mb',
-    'write-buffer-spillable' = 'true' ,
+    'write-buffer-spillable' = 'true',
     'partition.expiration-time' = '1 d',
     'partition.expiration-check-interval' = '1 h',
     'partition.timestamp-formatter' = 'yyyy-MM-dd',
     'partition.timestamp-pattern' = '$k1'
-    );
+);
 
-
-INSERT INTO dws.dws_trade_user_sku_order_refund_1d_full(user_id, sku_id, k1, sku_name, category1_id, category1_name, category2_id, category2_name, category3_id, category3_name, tm_id, tm_name, order_refund_count_1d, order_refund_num_1d, order_refund_amount_1d)
-select
+INSERT INTO dws.dws_trade_user_sku_order_refund_1d_full(
     user_id,
     sku_id,
     k1,
@@ -65,34 +62,38 @@ select
     category3_name,
     tm_id,
     tm_name,
-    order_refund_count,
-    order_refund_num,
-    order_refund_amount
-from
-    (
-        select
-            user_id,
-            sku_id,
-            k1,
-            count(*) order_refund_count,
-            sum(refund_num) order_refund_num,
-            sum(refund_amount) order_refund_amount
-        from dwd.dwd_trade_order_refund_full
-        group by user_id,sku_id,k1
-    )od
-        left join
-    (
-        select
-            id,
-            sku_name,
-            category1_id,
-            category1_name,
-            category2_id,
-            category2_name,
-            category3_id,
-            category3_name,
-            tm_id,
-            tm_name
-        from dim.dim_sku_full
-    )sku
-    on od.sku_id=sku.id;
+    order_refund_count_1d,
+    order_refund_num_1d,
+    order_refund_amount_1d
+)
+SELECT
+    rf.user_id,
+    rf.sku_id,
+    rf.k1,
+    sku.sku_name,
+    sku.category1_id,
+    sku.category1_name,
+    sku.category2_id,
+    sku.category2_name,
+    sku.category3_id,
+    sku.category3_name,
+    sku.tm_id,
+    sku.tm_name,
+    rf.order_refund_count_1d,
+    rf.order_refund_num_1d,
+    rf.order_refund_amount_1d
+FROM (
+    SELECT
+        user_id,
+        sku_id,
+        k1,
+        COUNT(*) AS order_refund_count_1d,
+        SUM(refund_num) AS order_refund_num_1d,
+        SUM(refund_amount) AS order_refund_amount_1d
+    FROM dwd.dwd_trade_order_refund_full
+    GROUP BY user_id, sku_id, k1
+) rf
+LEFT JOIN dim.dim_sku_full sku
+    ON rf.sku_id = sku.id
+   AND rf.k1 = sku.k1;
+

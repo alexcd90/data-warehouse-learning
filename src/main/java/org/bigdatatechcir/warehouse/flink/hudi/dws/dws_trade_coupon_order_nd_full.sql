@@ -1,74 +1,100 @@
 SET 'execution.checkpointing.interval' = '100s';
-SET 'table.exec.state.ttl'= '8640000';
+SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
 SET 'table.exec.mini-batch.size' = '10000';
 SET 'table.local-time-zone' = 'Asia/Shanghai';
-SET 'table.exec.sink.not-null-enforcer'='DROP';
+SET 'table.exec.sink.not-null-enforcer' = 'DROP';
 SET 'table.exec.sink.upsert-materialize' = 'NONE';
+SET 'execution.runtime-mode' = 'batch';
 
-create catalog hudi_catalog with(
-	'type' = 'hudi',
-	'mode' = 'hms',
-	'hive.conf.dir'='/opt/software/apache-hive-3.1.3-bin/conf'
+CREATE CATALOG hudi_catalog WITH (
+    'type' = 'hudi',
+    'mode' = 'hms',
+    'hive.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
 );
 
-use CATALOG hudi_catalog;
+USE CATALOG hudi_catalog;
 
-create  DATABASE IF NOT EXISTS hudi_dws;
+CREATE DATABASE IF NOT EXISTS hudi_dws;
 
 CREATE TABLE IF NOT EXISTS hudi_dws.dws_trade_coupon_order_nd_full(
-    `coupon_id`                BIGINT COMMENT '优惠券id',
-    `k1`                       STRING COMMENT '分区字段',
-    `coupon_name`              STRING COMMENT '优惠券名称',
-    `coupon_type_code`         STRING COMMENT '优惠券类型id',
-    `coupon_type_name`         STRING COMMENT '优惠券类型名称',
-    `coupon_rule`              STRING COMMENT '优惠券规则',
-    `start_date`               STRING COMMENT '发布日期',
-    `original_amount_30d`      DECIMAL(16, 2) COMMENT '使用下单原始金额',
-    `coupon_reduce_amount_30d` DECIMAL(16, 2) COMMENT '使用下单优惠金额',
-    PRIMARY KEY (`coupon_id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
+    `coupon_id` BIGINT COMMENT 'coupon id',
+    `k1` STRING COMMENT 'partition field',
+    `coupon_name` STRING COMMENT 'coupon name',
+    `coupon_type_code` STRING COMMENT 'coupon type code',
+    `coupon_type_name` STRING COMMENT 'coupon type name',
+    `coupon_rule` STRING COMMENT 'coupon rule',
+    `start_date` STRING COMMENT 'coupon start date',
+    `original_amount_30d` DECIMAL(16, 2) COMMENT 'recent 30 day original amount',
+    `coupon_reduce_amount_30d` DECIMAL(16, 2) COMMENT 'recent 30 day coupon reduce amount',
+    PRIMARY KEY (`coupon_id`, `k1`) NOT ENFORCED
+) PARTITIONED BY (`k1`) WITH (
     'connector' = 'hudi',
     'table.type' = 'MERGE_ON_READ',
     'read.streaming.enabled' = 'true',
     'read.streaming.check-interval' = '4',
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
-    );
+);
 
+CREATE TEMPORARY VIEW tmp_dws_trade_coupon_order_nd_current_date_param AS
+    SELECT CAST('${pdate}' AS DATE) AS cur_date
+;
 
-INSERT INTO hudi_dws.dws_trade_coupon_order_nd_full(coupon_id, k1, coupon_name, coupon_type_code, coupon_type_name, coupon_rule, start_date, original_amount_30d, coupon_reduce_amount_30d)
-select
-    id,
-    od.k1,
+CREATE TEMPORARY VIEW tmp_dws_trade_coupon_order_nd_coupon_union AS
+    SELECT
+        id AS coupon_id,
+        MAX(coupon_name) AS coupon_name,
+        MAX(coupon_type_code) AS coupon_type_code,
+        MAX(coupon_type_name) AS coupon_type_name,
+        MAX(benefit_rule) AS coupon_rule,
+        MAX(DATE_FORMAT(start_time, 'yyyy-MM-dd')) AS start_date,
+        CAST(0 AS DECIMAL(16, 2)) AS original_amount_30d,
+        CAST(0 AS DECIMAL(16, 2)) AS coupon_reduce_amount_30d
+    FROM hudi_dim.dim_coupon_full /*+ OPTIONS('read.streaming.enabled' = 'false') */
+    CROSS JOIN tmp_dws_trade_coupon_order_nd_current_date_param
+    WHERE CAST(k1 AS DATE) <= cur_date
+    GROUP BY id
+    UNION ALL
+    SELECT
+        c.coupon_id,
+        CAST('' AS STRING) AS coupon_name,
+        CAST('' AS STRING) AS coupon_type_code,
+        CAST('' AS STRING) AS coupon_type_name,
+        CAST('' AS STRING) AS coupon_rule,
+        CAST(NULL AS STRING) AS start_date,
+        SUM(od.split_original_amount) AS original_amount_30d,
+        SUM(COALESCE(od.split_coupon_amount, CAST(0 AS DECIMAL(16, 2)))) AS coupon_reduce_amount_30d
+    FROM hudi_dwd.dwd_tool_coupon_order_full /*+ OPTIONS('read.streaming.enabled' = 'false') */ c
+    JOIN hudi_dwd.dwd_trade_order_detail_full /*+ OPTIONS('read.streaming.enabled' = 'false') */ od
+        ON c.order_id = od.order_id
+       AND c.coupon_id = od.coupon_id
+    CROSS JOIN tmp_dws_trade_coupon_order_nd_current_date_param
+    WHERE CAST(od.k1 AS DATE) BETWEEN cur_date - INTERVAL '29' DAY AND cur_date
+    GROUP BY c.coupon_id
+;
+
+INSERT INTO hudi_dws.dws_trade_coupon_order_nd_full(
+    coupon_id,
+    k1,
     coupon_name,
     coupon_type_code,
     coupon_type_name,
-    benefit_rule,
+    coupon_rule,
     start_date,
-    sum(split_original_amount),
-    sum(split_coupon_amount)
-from
-    (
-        select
-            id,
-            coupon_name,
-            coupon_type_code,
-            coupon_type_name,
-            benefit_rule,
-            date_format(start_time,'yyyy-MM-dd') start_date
-        from hudi_dim.dim_coupon_full
-    )cou
-        left join
-    (
-        select
-            coupon_id,
-            k1,
-            order_id,
-            split_original_amount,
-            split_coupon_amount
-        from hudi_dwd.dwd_trade_order_detail_full
-        where coupon_id is not null
-    )od
-    on cou.id=od.coupon_id
-group by id,od.k1,coupon_name,coupon_type_code,coupon_type_name,benefit_rule,start_date;
+    original_amount_30d,
+    coupon_reduce_amount_30d
+)
+SELECT
+    u.coupon_id,
+    CAST(cp.cur_date AS STRING) AS k1,
+    MAX(u.coupon_name) AS coupon_name,
+    MAX(u.coupon_type_code) AS coupon_type_code,
+    MAX(u.coupon_type_name) AS coupon_type_name,
+    MAX(u.coupon_rule) AS coupon_rule,
+    COALESCE(MAX(u.start_date), CAST(cp.cur_date AS STRING)) AS start_date,
+    SUM(u.original_amount_30d) AS original_amount_30d,
+    SUM(u.coupon_reduce_amount_30d) AS coupon_reduce_amount_30d
+FROM tmp_dws_trade_coupon_order_nd_coupon_union u
+CROSS JOIN tmp_dws_trade_coupon_order_nd_current_date_param cp
+GROUP BY u.coupon_id, cp.cur_date;
