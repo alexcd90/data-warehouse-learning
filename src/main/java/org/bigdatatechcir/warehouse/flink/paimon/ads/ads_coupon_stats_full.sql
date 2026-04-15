@@ -1,11 +1,12 @@
 SET 'execution.checkpointing.interval' = '100s';
-SET 'table.exec.state.ttl'= '8640000';
+SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
 SET 'table.exec.mini-batch.size' = '10000';
 SET 'table.local-time-zone' = 'Asia/Shanghai';
-SET 'table.exec.sink.not-null-enforcer'='DROP';
+SET 'table.exec.sink.not-null-enforcer' = 'DROP';
 SET 'table.exec.sink.upsert-materialize' = 'NONE';
+SET 'execution.runtime-mode' = 'batch';
 
 CREATE CATALOG paimon_hive WITH (
     'type' = 'paimon',
@@ -15,19 +16,28 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS ads;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS ads;
 
 CREATE TABLE IF NOT EXISTS ads.ads_coupon_stats_full(
-    `dt`          STRING COMMENT '统计日期',
-    `coupon_id`   BIGINT COMMENT '优惠券ID',
-    `coupon_name` STRING COMMENT '优惠券名称',
-    `start_date`  STRING COMMENT '发布日期',
-    `rule_name`   STRING COMMENT '优惠规则，例如满100元减10元',
-    `reduce_rate` DECIMAL(16, 2) COMMENT '补贴率'
-    );
+    `dt` STRING COMMENT 'stat date',
+    `coupon_id` BIGINT COMMENT 'coupon id',
+    `coupon_name` STRING COMMENT 'coupon name',
+    `start_date` STRING COMMENT 'coupon start date',
+    `rule_name` STRING COMMENT 'coupon rule',
+    `reduce_rate` DECIMAL(16, 2) COMMENT 'coupon reduce rate',
+    PRIMARY KEY (`dt`, `coupon_id`) NOT ENFORCED
+) PARTITIONED BY (`dt`) WITH (
+    'connector' = 'paimon',
+    'metastore.partitioned-table' = 'true',
+    'file.format' = 'parquet',
+    'write-buffer-size' = '512mb',
+    'write-buffer-spillable' = 'true',
+    'partition.expiration-time' = '1 d',
+    'partition.expiration-check-interval' = '1 h',
+    'partition.timestamp-formatter' = 'yyyy-MM-dd',
+    'partition.timestamp-pattern' = '$dt'
+);
 
 INSERT INTO ads.ads_coupon_stats_full(
     dt,
@@ -36,12 +46,16 @@ INSERT INTO ads.ads_coupon_stats_full(
     start_date,
     rule_name,
     reduce_rate
-    )
-select
-    k1,
+)
+SELECT
+    '${pdate}' AS dt,
     coupon_id,
     coupon_name,
     start_date,
-    coupon_rule,
-    cast(coupon_reduce_amount_30d/original_amount_30d as decimal(16,2))
-from dws.dws_trade_coupon_order_nd_full;
+    coupon_rule AS rule_name,
+    CASE
+        WHEN original_amount_30d = CAST(0 AS DECIMAL(16, 2)) THEN CAST(0 AS DECIMAL(16, 2))
+        ELSE CAST(coupon_reduce_amount_30d / original_amount_30d AS DECIMAL(16, 2))
+    END AS reduce_rate
+FROM dws.dws_trade_coupon_order_nd_full
+WHERE k1 = '${pdate}';

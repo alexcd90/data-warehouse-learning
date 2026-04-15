@@ -1,4 +1,3 @@
--- 工具域优惠券使用(支付)事务事实表
 SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl'= '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
@@ -16,10 +15,8 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS dwd;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS dwd;
 
 CREATE TABLE IF NOT EXISTS dwd.dwd_tool_coupon_pay_full(
     `id`           BIGINT COMMENT '编号',
@@ -30,17 +27,17 @@ CREATE TABLE IF NOT EXISTS dwd.dwd_tool_coupon_pay_full(
     `date_id`      STRING COMMENT '日期ID',
     `payment_time` TIMESTAMP(3) COMMENT '使用下单时间',
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
+    ) PARTITIONED BY (`k1`) WITH (
     'connector' = 'paimon',
     'metastore.partitioned-table' = 'true',
     'file.format' = 'parquet',
     'write-buffer-size' = '512mb',
-    'write-buffer-spillable' = 'true' ,
+    'write-buffer-spillable' = 'true',
     'partition.expiration-time' = '1 d',
     'partition.expiration-check-interval' = '1 h',
     'partition.timestamp-formatter' = 'yyyy-MM-dd',
     'partition.timestamp-pattern' = '$k1'
-    );
+);
 
 
 insert into dwd.dwd_tool_coupon_pay_full(

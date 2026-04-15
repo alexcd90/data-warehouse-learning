@@ -1,4 +1,3 @@
--- 退款表（增量表）
 SET 'execution.checkpointing.interval' = '10s';
 SET 'table.exec.state.ttl'= '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
@@ -41,10 +40,8 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS ods;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS ods;
 
 CREATE TABLE IF NOT EXISTS ods.ods_refund_payment_full(
     `id` bigint NOT NULL  COMMENT '购物券编号',
@@ -61,17 +58,17 @@ CREATE TABLE IF NOT EXISTS ods.ods_refund_payment_full(
     `callback_time` timestamp(3)  NULL COMMENT '回调时间',
     `callback_content` STRING  COMMENT '回调信息',
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
-   'connector' = 'paimon',
-   'metastore.partitioned-table' = 'true',
-   'file.format' = 'parquet',
-   'write-buffer-size' = '512mb',
-   'write-buffer-spillable' = 'true' ,
-   'partition.expiration-time' = '1 d',
-   'partition.expiration-check-interval' = '1 h',
-   'partition.timestamp-formatter' = 'yyyy-MM-dd',
-   'partition.timestamp-pattern' = '$k1'
-   );
+    ) PARTITIONED BY (`k1`) WITH (
+    'connector' = 'paimon',
+    'metastore.partitioned-table' = 'true',
+    'file.format' = 'parquet',
+    'write-buffer-size' = '512mb',
+    'write-buffer-spillable' = 'true',
+    'partition.expiration-time' = '1 d',
+    'partition.expiration-check-interval' = '1 h',
+    'partition.timestamp-formatter' = 'yyyy-MM-dd',
+    'partition.timestamp-pattern' = '$k1'
+);
 
 INSERT INTO ods.ods_refund_payment_full(
     `id`,

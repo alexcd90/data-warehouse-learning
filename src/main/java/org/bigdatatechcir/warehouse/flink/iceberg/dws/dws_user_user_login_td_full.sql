@@ -1,4 +1,4 @@
-﻿SET 'execution.checkpointing.interval' = '100s';
+SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
@@ -17,7 +17,6 @@ CREATE CATALOG iceberg_catalog WITH (
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
 USE CATALOG iceberg_catalog;
-
 CREATE DATABASE IF NOT EXISTS iceberg_dws;
 
 CREATE TABLE IF NOT EXISTS iceberg_dws.dws_user_user_login_td_full(
@@ -31,7 +30,6 @@ CREATE TABLE IF NOT EXISTS iceberg_dws.dws_user_user_login_td_full(
     'uri' = 'thrift://192.168.244.129:9083',
     'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
-
 
 CREATE TEMPORARY VIEW tmp_dws_user_user_login_td_current_date_param AS
     SELECT CAST('${pdate}' AS DATE) AS cur_date
@@ -72,4 +70,3 @@ FROM tmp_dws_user_user_login_td_user_dim ud
 CROSS JOIN tmp_dws_user_user_login_td_current_date_param cp
 LEFT JOIN tmp_dws_user_user_login_td_login_agg la
     ON ud.user_id = la.user_id;
-

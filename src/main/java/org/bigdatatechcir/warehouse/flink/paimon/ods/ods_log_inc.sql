@@ -39,10 +39,8 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS ods;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS ods;
 
 CREATE TABLE IF NOT EXISTS ods.ods_log_inc(
     `id`                            STRING,
@@ -73,6 +71,11 @@ CREATE TABLE IF NOT EXISTS ods.ods_log_inc(
     `err_msg`                       STRING,
     `ts`                            BIGINT  COMMENT '时间戳',
     PRIMARY KEY (`id`) NOT ENFORCED
+    ) WITH (
+    'connector' = 'paimon',
+    'file.format' = 'parquet',
+    'write-buffer-size' = '512mb',
+    'write-buffer-spillable' = 'true'
 );
 
 insert into ods.ods_log_inc(

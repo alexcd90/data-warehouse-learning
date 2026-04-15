@@ -1,4 +1,4 @@
-﻿SET 'execution.checkpointing.interval' = '100s';
+SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
@@ -17,7 +17,6 @@ CREATE CATALOG paimon_hive WITH (
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
 USE CATALOG paimon_hive;
-
 CREATE DATABASE IF NOT EXISTS dws;
 
 CREATE TABLE IF NOT EXISTS dws.dws_traffic_page_visitor_page_view_nd_full(
@@ -103,4 +102,3 @@ SELECT
     pa.view_count_30d
 FROM tmp_dws_traffic_page_visitor_page_view_nd_page_view_agg pa
 CROSS JOIN tmp_dws_traffic_page_visitor_page_view_nd_current_date_param cp;
-

@@ -1,4 +1,3 @@
--- 流量域页面浏览事务事实表
 SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl'= '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
@@ -18,10 +17,8 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS dwd;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS dwd;
 
 CREATE TABLE IF NOT EXISTS dwd.dwd_traffic_page_view_full(
     `id`             STRING,
@@ -45,17 +42,17 @@ CREATE TABLE IF NOT EXISTS dwd.dwd_traffic_page_view_full(
     `session_id`     STRING COMMENT '所属会话id',
     `during_time`    BIGINT COMMENT '持续时间毫秒',
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
+    ) PARTITIONED BY (`k1`) WITH (
     'connector' = 'paimon',
     'metastore.partitioned-table' = 'true',
     'file.format' = 'parquet',
     'write-buffer-size' = '512mb',
-    'write-buffer-spillable' = 'true' ,
+    'write-buffer-spillable' = 'true',
     'partition.expiration-time' = '1 d',
     'partition.expiration-check-interval' = '1 h',
     'partition.timestamp-formatter' = 'yyyy-MM-dd',
     'partition.timestamp-pattern' = '$k1'
-    );
+);
 
 ALTER TABLE dwd.dwd_traffic_page_view_full SET (
     'sink.parallelism' = '10'

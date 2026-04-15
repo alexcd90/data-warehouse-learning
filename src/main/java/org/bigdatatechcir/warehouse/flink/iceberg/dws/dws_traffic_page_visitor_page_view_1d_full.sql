@@ -1,4 +1,4 @@
-﻿SET 'execution.checkpointing.interval' = '100s';
+SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
@@ -17,7 +17,6 @@ CREATE CATALOG iceberg_catalog WITH (
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
 USE CATALOG iceberg_catalog;
-
 CREATE DATABASE IF NOT EXISTS iceberg_dws;
 
 CREATE TABLE IF NOT EXISTS iceberg_dws.dws_traffic_page_visitor_page_view_1d_full(
@@ -35,7 +34,6 @@ CREATE TABLE IF NOT EXISTS iceberg_dws.dws_traffic_page_visitor_page_view_1d_ful
     'uri' = 'thrift://192.168.244.129:9083',
     'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
-
 
 INSERT INTO iceberg_dws.dws_traffic_page_visitor_page_view_1d_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     mid_id,
@@ -58,4 +56,3 @@ SELECT
     COUNT(*) AS view_count_1d
 FROM iceberg_dwd.dwd_traffic_page_view_full
 GROUP BY mid_id, k1, brand, model, operate_system, page_id;
-

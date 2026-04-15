@@ -17,12 +17,10 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_dwd;
 
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_dwd;
-
-CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_user_login_full (
+CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_user_login_full(
     `k1`             STRING COMMENT '分区字段',
     `user_id`        STRING COMMENT '用户ID',
     `date_id`        STRING COMMENT '日期ID',
@@ -35,17 +33,17 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_user_login_full (
     `model`          STRING COMMENT '设备型号',
     `operate_system` STRING COMMENT '设备操作系统',
     PRIMARY KEY (`k1`,`user_id`,`date_id` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
-    'catalog-name'='hive_prod',
-    'uri'='thrift://192.168.244.129:9083',
-    'warehouse'='hdfs://192.168.244.129:9000/user/hive/warehouse/'
-    );
+    ) PARTITIONED BY (`k1`) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
+);
 
 ALTER TABLE iceberg_dwd.dwd_user_login_full SET (
     'sink.parallelism' = '10'
     );
 
-INSERT INTO iceberg_dwd.dwd_user_login_full /*+ OPTIONS('upsert-enabled'='true') */(
+INSERT INTO iceberg_dwd.dwd_user_login_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     k1,
     user_id,
     date_id,

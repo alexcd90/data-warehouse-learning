@@ -1,4 +1,3 @@
--- 地区表（全量表）
 SET 'execution.checkpointing.interval' = '10s';
 SET 'table.exec.state.ttl'= '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
@@ -31,15 +30,18 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS ods;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS ods;
 
 CREATE TABLE IF NOT EXISTS ods.ods_base_region_full(
     `id` STRING NOT NULL COMMENT '大区id',
     `region_name` STRING NULL COMMENT '大区名称',
     PRIMARY KEY (`id`) NOT ENFORCED
+    ) WITH (
+    'connector' = 'paimon',
+    'file.format' = 'parquet',
+    'write-buffer-size' = '512mb',
+    'write-buffer-spillable' = 'true'
 );
 
 INSERT INTO ods.ods_base_region_full(

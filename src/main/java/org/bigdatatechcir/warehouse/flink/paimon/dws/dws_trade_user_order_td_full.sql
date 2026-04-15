@@ -1,4 +1,4 @@
-﻿SET 'execution.checkpointing.interval' = '100s';
+SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
@@ -17,7 +17,6 @@ CREATE CATALOG paimon_hive WITH (
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
 USE CATALOG paimon_hive;
-
 CREATE DATABASE IF NOT EXISTS dws;
 
 CREATE TABLE IF NOT EXISTS dws.dws_trade_user_order_td_full(
@@ -103,4 +102,3 @@ SELECT
     oa.total_amount_td
 FROM tmp_dws_trade_user_order_td_order_agg oa
 CROSS JOIN tmp_dws_trade_user_order_td_current_date_param cp;
-

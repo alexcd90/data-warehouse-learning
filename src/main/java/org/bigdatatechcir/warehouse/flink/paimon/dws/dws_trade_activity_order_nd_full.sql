@@ -1,4 +1,4 @@
-﻿SET 'execution.checkpointing.interval' = '100s';
+SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
@@ -17,7 +17,6 @@ CREATE CATALOG paimon_hive WITH (
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
 USE CATALOG paimon_hive;
-
 CREATE DATABASE IF NOT EXISTS dws;
 
 CREATE TABLE IF NOT EXISTS dws.dws_trade_activity_order_nd_full(
@@ -97,4 +96,3 @@ SELECT
 FROM tmp_dws_trade_activity_order_nd_activity_union u
 CROSS JOIN tmp_dws_trade_activity_order_nd_current_date_param cp
 GROUP BY u.activity_id, cp.cur_date;
-

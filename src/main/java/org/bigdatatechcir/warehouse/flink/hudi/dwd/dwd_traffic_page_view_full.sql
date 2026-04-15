@@ -118,7 +118,7 @@ from
             page_source_type,
             ts,
             ts session_start_point
-        from hudi_ods.ods_log_inc
+        from hudi_ods.ods_log_inc /*+ OPTIONS('read.streaming.enabled' = 'false') */
         where  page_during_time is not null
         and page_page_id is not null
     )log
@@ -127,6 +127,6 @@ from
         select
             id province_id,
             area_code
-        from hudi_ods.ods_base_province_full
+        from hudi_ods.ods_base_province_full /*+ OPTIONS('read.streaming.enabled' = 'false') */
     )bp
     on log.area_code=bp.area_code;

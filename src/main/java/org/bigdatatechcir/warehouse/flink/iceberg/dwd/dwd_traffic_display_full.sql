@@ -6,7 +6,6 @@ SET 'table.exec.mini-batch.size' = '10000';
 SET 'table.local-time-zone' = 'Asia/Shanghai';
 SET 'table.exec.sink.not-null-enforcer'='DROP';
 SET 'table.exec.sink.upsert-materialize' = 'NONE';
-SET 'execution.runtime-mode' = 'streaming';
 
 CREATE CATALOG iceberg_catalog WITH (
     'type' = 'iceberg',
@@ -16,10 +15,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_dwd;
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_dwd;
 
 CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_traffic_display_full(
     `id`                STRING,
@@ -47,15 +44,15 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_traffic_display_full(
     `display_order`     BIGINT COMMENT '曝光顺序',
     `display_pos_id`    BIGINT COMMENT '曝光位置',
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-)   PARTITIONED BY (`k1` ) WITH (
-    'catalog-name'='hive_prod',
-    'uri'='thrift://192.168.244.129:9083',
-    'warehouse'='hdfs://192.168.244.129:9000/user/hive/warehouse/'
+) PARTITIONED BY (`k1`) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
 
 CREATE TEMPORARY FUNCTION json_displays_array_parser AS 'org.bigdatatechcir.warehouse.flink.udf.JsonDisplaysArrayParser';
 
-insert into iceberg_dwd.dwd_traffic_display_full /*+ OPTIONS('upsert-enabled'='true') */(
+insert into iceberg_dwd.dwd_traffic_display_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     `id`,
     `k1`,
     `province_id`,
@@ -133,13 +130,13 @@ from
             json_displays_array_parser(`displays`).`order` as display_order,
             json_displays_array_parser(`displays`).`pos_id` as display_pos_id,
             ts
-        from  iceberg_ods.ods_log_inc /*+ OPTIONS('streaming'='true', 'monitor-interval'='1s')*/
+        from  iceberg_ods.ods_log_inc
     )log
         left join
     (
         select
             id province_id,
             area_code
-        from iceberg_ods.ods_base_province_full /*+ OPTIONS('streaming'='true', 'monitor-interval'='1s')*/
+        from iceberg_ods.ods_base_province_full
     )bp
     on log.area_code=bp.area_code;

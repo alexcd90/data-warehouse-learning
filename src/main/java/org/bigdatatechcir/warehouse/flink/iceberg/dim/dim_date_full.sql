@@ -37,10 +37,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_dim;
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_dim;
 
 CREATE TABLE IF NOT EXISTS iceberg_dim.dim_date_full(
     `date_id`    VARCHAR(255) COMMENT '日期ID',
@@ -55,7 +53,7 @@ CREATE TABLE IF NOT EXISTS iceberg_dim.dim_date_full(
     PRIMARY KEY (`date_id` ) NOT ENFORCED
     );
 
-INSERT INTO iceberg_dim.dim_date_full /*+ OPTIONS('upsert-enabled'='true') */(
+INSERT INTO iceberg_dim.dim_date_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     `date_id`,
     `week_id`,
     `week_day`,

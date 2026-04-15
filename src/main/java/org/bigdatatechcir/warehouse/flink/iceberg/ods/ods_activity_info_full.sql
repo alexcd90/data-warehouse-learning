@@ -35,10 +35,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_ods;
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_ods;
 
 CREATE TABLE IF NOT EXISTS iceberg_ods.ods_activity_info_full(
     `id`            BIGINT COMMENT '活动id',
@@ -50,13 +48,13 @@ CREATE TABLE IF NOT EXISTS iceberg_ods.ods_activity_info_full(
     `end_time`      STRING COMMENT '结束时间',
     `create_time`   STRING COMMENT '创建时间',
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-)   PARTITIONED BY (`k1` ) WITH (
-    'catalog-name'='hive_prod',
-    'uri'='thrift://192.168.244.129:9083',
-    'warehouse'='hdfs://192.168.244.129:9000/user/hive/warehouse/'
+) PARTITIONED BY (`k1`) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
 
-INSERT into  iceberg_ods.ods_activity_info_full /*+ OPTIONS('upsert-enabled'='true') */ (`id`, `k1` , `activity_name`, `activity_type`, `activity_desc`, `start_time`, `end_time`, `create_time`)
+INSERT INTO iceberg_ods.ods_activity_info_full /*+ OPTIONS('upsert-enabled' = 'true') */(`id`, `k1` , `activity_name`, `activity_type`, `activity_desc`, `start_time`, `end_time`, `create_time`)
 select
     id,
     DATE_FORMAT(create_time, 'yyyy-MM-dd') AS k1,

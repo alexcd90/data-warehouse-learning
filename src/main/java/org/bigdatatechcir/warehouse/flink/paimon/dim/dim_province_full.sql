@@ -1,4 +1,3 @@
--- 地区维度表
 SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl'= '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
@@ -16,10 +15,8 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS dim;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS dim;
 
 CREATE TABLE IF NOT EXISTS dim.dim_province_full(
     `id`            BIGINT COMMENT 'id',

@@ -30,19 +30,20 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_ods;
-
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_ods;
 
 CREATE TABLE IF NOT EXISTS iceberg_ods.ods_base_region_full(
     `id` STRING NOT NULL COMMENT '大区id',
     `region_name` STRING NULL COMMENT '大区名称',
     PRIMARY KEY (`id`) NOT ENFORCED
+    ) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
 
-INSERT INTO iceberg_ods.ods_base_region_full  /*+ OPTIONS('upsert-enabled'='true') */(
+INSERT INTO iceberg_ods.ods_base_region_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     `id` ,
     `region_name`
 )

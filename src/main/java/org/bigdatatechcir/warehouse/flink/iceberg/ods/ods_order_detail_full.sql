@@ -41,11 +41,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_ods;
-
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_ods;
 
 CREATE TABLE IF NOT EXISTS iceberg_ods.ods_order_detail_full(
     `id` bigint NOT NULL  COMMENT '购物券编号',
@@ -63,13 +60,13 @@ CREATE TABLE IF NOT EXISTS iceberg_ods.ods_order_detail_full(
     `split_activity_amount` decimal(16,2)  NULL,
     `split_coupon_amount` decimal(16,2)  NULL,
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
-    'catalog-name'='hive_prod',
-    'uri'='thrift://192.168.244.129:9083',
-    'warehouse'='hdfs://192.168.244.129:9000/user/hive/warehouse/'
-   );
+    ) PARTITIONED BY (`k1`) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
+);
 
-INSERT INTO iceberg_ods.ods_order_detail_full  /*+ OPTIONS('upsert-enabled'='true') */(
+INSERT INTO iceberg_ods.ods_order_detail_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     `id`,
     `k1`,
     `order_id`,

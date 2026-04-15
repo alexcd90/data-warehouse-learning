@@ -6,7 +6,6 @@ SET 'table.exec.mini-batch.size' = '10000';
 SET 'table.local-time-zone' = 'Asia/Shanghai';
 SET 'table.exec.sink.not-null-enforcer'='DROP';
 SET 'table.exec.sink.upsert-materialize' = 'NONE';
-SET 'execution.runtime-mode' = 'streaming';
 
 CREATE CATALOG iceberg_catalog WITH (
     'type' = 'iceberg',
@@ -16,10 +15,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_dwd;
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_dwd;
 
 CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_trade_order_refund_full(
     `id`                      BIGINT COMMENT '编号',
@@ -38,14 +35,14 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_trade_order_refund_full(
     `refund_num`              BIGINT COMMENT '退单件数',
     `refund_amount`           DECIMAL(16, 2) COMMENT '退单金额',
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
-    'catalog-name'='hive_prod',
-    'uri'='thrift://192.168.244.129:9083',
-    'warehouse'='hdfs://192.168.244.129:9000/user/hive/warehouse/'
-    );
+    ) PARTITIONED BY (`k1`) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
+);
 
 
-INSERT INTO iceberg_dwd.dwd_trade_order_refund_full /*+ OPTIONS('upsert-enabled'='true') */(
+INSERT INTO iceberg_dwd.dwd_trade_order_refund_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     id,
     k1,
     user_id,
@@ -91,14 +88,14 @@ from
             refund_reason_type,
             refund_reason_txt,
             create_time
-        from iceberg_ods.ods_order_refund_info_full /*+ OPTIONS('streaming'='true', 'monitor-interval'='1s')*/
+        from iceberg_ods.ods_order_refund_info_full
     )ri
         left join
     (
         select
             id,
             province_id
-        from iceberg_ods.ods_order_info_full /*+ OPTIONS('streaming'='true', 'monitor-interval'='1s')*/
+        from iceberg_ods.ods_order_info_full
     )oi
     on ri.order_id=oi.id
         left join
@@ -106,7 +103,7 @@ from
         select
             dic_code,
             dic_name
-        from iceberg_ods.ods_base_dic_full /*+ OPTIONS('streaming'='true', 'monitor-interval'='1s')*/
+        from iceberg_ods.ods_base_dic_full
         where parent_code = '15'
     )type_dic
     on ri.refund_type=type_dic.dic_code
@@ -115,7 +112,7 @@ from
         select
             dic_code,
             dic_name
-        from iceberg_ods.ods_base_dic_full /*+ OPTIONS('streaming'='true', 'monitor-interval'='1s')*/
+        from iceberg_ods.ods_base_dic_full
         where  parent_code = '13'
     )reason_dic
     on ri.refund_reason_type=reason_dic.dic_code;

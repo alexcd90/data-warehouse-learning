@@ -1,11 +1,10 @@
--- 商品维度表
 SET 'execution.checkpointing.interval' = '100s';
-SET 'table.exec.state.ttl'= '8640000';
+SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
 SET 'table.exec.mini-batch.size' = '10000';
 SET 'table.local-time-zone' = 'Asia/Shanghai';
-SET 'table.exec.sink.not-null-enforcer'='DROP';
+SET 'table.exec.sink.not-null-enforcer' = 'DROP';
 SET 'table.exec.sink.upsert-materialize' = 'NONE';
 
 CREATE CATALOG paimon_hive WITH (
@@ -16,53 +15,74 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS dim;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS dim;
 
 CREATE TABLE IF NOT EXISTS dim.dim_sku_full(
-    `id`                   BIGINT COMMENT 'sku_id',
-    `k1`                   STRING COMMENT '分区字段',
-    `price`                DECIMAL(16, 2) COMMENT '商品价格',
-    `sku_name`             STRING COMMENT '商品名称',
-    `sku_desc`             STRING COMMENT '商品描述',
-    `weight`               DECIMAL(16, 2) COMMENT '重量',
-    `is_sale`              INT COMMENT '是否在售',
-    `spu_id`               BIGINT COMMENT 'spu编号',
-    `spu_name`             STRING COMMENT 'spu名称',
-    `category3_id`         BIGINT COMMENT '三级分类id',
-    `category3_name`       STRING COMMENT '三级分类名称',
-    `category2_id`         BIGINT COMMENT '二级分类id',
-    `category2_name`       STRING COMMENT '二级分类名称',
-    `category1_id`         BIGINT COMMENT '一级分类id',
-    `category1_name`       STRING COMMENT '一级分类名称',
-    `tm_id`                BIGINT COMMENT '品牌id',
-    `tm_name`              STRING COMMENT '品牌名称',
-    `attr_ids`             STRING COMMENT '平台属性',
-    `sale_attr_ids`        STRING COMMENT '销售属性',
-    `create_time`           TIMESTAMP(3) COMMENT '创建时间',
-    PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
+    `id` BIGINT COMMENT 'sku id',
+    `k1` STRING COMMENT 'partition field',
+    `price` DECIMAL(16, 2) COMMENT 'price',
+    `sku_name` STRING COMMENT 'sku name',
+    `sku_desc` STRING COMMENT 'sku desc',
+    `weight` DECIMAL(16, 2) COMMENT 'weight',
+    `is_sale` INT COMMENT 'is sale',
+    `spu_id` BIGINT COMMENT 'spu id',
+    `spu_name` STRING COMMENT 'spu name',
+    `category3_id` BIGINT COMMENT 'category3 id',
+    `category3_name` STRING COMMENT 'category3 name',
+    `category2_id` BIGINT COMMENT 'category2 id',
+    `category2_name` STRING COMMENT 'category2 name',
+    `category1_id` BIGINT COMMENT 'category1 id',
+    `category1_name` STRING COMMENT 'category1 name',
+    `tm_id` BIGINT COMMENT 'tm id',
+    `tm_name` STRING COMMENT 'tm name',
+    `default_img` STRING COMMENT 'default image',
+    `attr_ids` STRING COMMENT 'platform attr ids',
+    `attr_values` STRING COMMENT 'platform attr values',
+    `sale_attr_ids` STRING COMMENT 'sale attr ids',
+    `sale_attr_values` STRING COMMENT 'sale attr values',
+    `sku_cost` DECIMAL(16, 2) COMMENT 'sku cost',
+    `create_time` TIMESTAMP(3) COMMENT 'create time',
+    PRIMARY KEY (`id`, `k1`) NOT ENFORCED
+) PARTITIONED BY (`k1`) WITH (
     'connector' = 'paimon',
     'metastore.partitioned-table' = 'true',
     'file.format' = 'parquet',
     'write-buffer-size' = '512mb',
-    'write-buffer-spillable' = 'true' ,
+    'write-buffer-spillable' = 'true',
     'partition.expiration-time' = '1 d',
     'partition.expiration-check-interval' = '1 h',
     'partition.timestamp-formatter' = 'yyyy-MM-dd',
     'partition.timestamp-pattern' = '$k1'
-    );
+);
 
 INSERT INTO dim.dim_sku_full(
-    id, k1, price, sku_name, sku_desc, weight, is_sale,
-    spu_id, spu_name, category3_id, category3_name,
-    category2_id, category2_name, category1_id,
-    category1_name, tm_id, tm_name, attr_ids,
-    sale_attr_ids, create_time
+    id,
+    k1,
+    price,
+    sku_name,
+    sku_desc,
+    weight,
+    is_sale,
+    spu_id,
+    spu_name,
+    category3_id,
+    category3_name,
+    category2_id,
+    category2_name,
+    category1_id,
+    category1_name,
+    tm_id,
+    tm_name,
+    default_img,
+    attr_ids,
+    attr_values,
+    sale_attr_ids,
+    sale_attr_values,
+    sku_cost,
+    create_time
 )
-SELECT
+select
     s.id,
     s.k1,
     s.price,
@@ -73,19 +93,23 @@ SELECT
     s.spu_id,
     sp.spu_name,
     s.category3_id,
-    c3.name AS category3_name,
+    c3.name as category3_name,
     c3.category2_id,
-    c2.name AS category2_name,
+    c2.name as category2_name,
     c2.category1_id,
-    c1.name AS category1_name,
+    c1.name as category1_name,
     s.tm_id,
     tm.tm_name,
-    cast(a.attr_ids as STRING),
-    cast(sa.sale_attr_ids as STRING),
+    s.sku_default_img,
+    a.attr_ids,
+    a.attr_values,
+    sa.sale_attr_ids,
+    sa.sale_attr_values,
+    cost.sku_cost,
     s.create_time
-FROM
+from
     (
-        SELECT
+        select
             id,
             k1,
             price,
@@ -96,52 +120,79 @@ FROM
             spu_id,
             category3_id,
             tm_id,
+            sku_default_img,
             create_time
-        FROM ods.ods_sku_info_full
+        from ods.ods_sku_info_full
     ) s
-        LEFT JOIN (
-        SELECT
+    left join
+    (
+        select
             id,
             spu_name
-        FROM ods.ods_spu_info_full
-    ) sp ON s.spu_id = sp.id
-        LEFT JOIN (
-        SELECT
+        from ods.ods_spu_info_full
+    ) sp
+    on s.spu_id = sp.id
+    left join
+    (
+        select
             id,
             name,
             category2_id
-        FROM ods.ods_base_category3_full
-    ) c3 ON s.category3_id = c3.id
-        LEFT JOIN (
-        SELECT
+        from ods.ods_base_category3_full
+    ) c3
+    on s.category3_id = c3.id
+    left join
+    (
+        select
             id,
             name,
             category1_id
-        FROM ods.ods_base_category2_full
-    ) c2 ON c3.category2_id = c2.id
-        LEFT JOIN (
-        SELECT
+        from ods.ods_base_category2_full
+    ) c2
+    on c3.category2_id = c2.id
+    left join
+    (
+        select
             id,
             name
-        FROM ods.ods_base_category1_full
-    ) c1 ON c2.category1_id = c1.id
-        LEFT JOIN (
-        SELECT
+        from ods.ods_base_category1_full
+    ) c1
+    on c2.category1_id = c1.id
+    left join
+    (
+        select
             id,
             tm_name
-        FROM ods.ods_base_trademark_full
-    ) tm ON s.tm_id = tm.id
-        LEFT JOIN (
-        SELECT
+        from ods.ods_base_trademark_full
+    ) tm
+    on s.tm_id = tm.id
+    left join
+    (
+        select
             sku_id,
-            collect(id) AS attr_ids
-        FROM ods.ods_sku_attr_value_full
-        GROUP BY sku_id
-    ) a ON s.id = a.sku_id
-        LEFT JOIN (
-        SELECT
+            LISTAGG(CAST(id AS STRING), ';') AS attr_ids,
+            LISTAGG(CONCAT(attr_name, ':', value_name), ';') AS attr_values
+        from ods.ods_sku_attr_value_full
+        group by sku_id
+    ) a
+    on s.id = a.sku_id
+    left join
+    (
+        select
             sku_id,
-            collect(id) AS sale_attr_ids
-        FROM ods.ods_sku_sale_attr_value_full
-        GROUP BY sku_id
-    ) sa ON s.id = sa.sku_id;
+            LISTAGG(CAST(id AS STRING), ';') AS sale_attr_ids,
+            LISTAGG(CONCAT(sale_attr_name, ':', sale_attr_value_name), ';') AS sale_attr_values
+        from ods.ods_sku_sale_attr_value_full
+        group by sku_id
+    ) sa
+    on s.id = sa.sku_id
+    left join
+    (
+        select
+            sku_id,
+            max(sku_cost) as sku_cost
+        from ods.ods_financial_sku_cost_full
+        where is_lastest = '1'
+        group by sku_id
+    ) cost
+    on s.id = cost.sku_id;

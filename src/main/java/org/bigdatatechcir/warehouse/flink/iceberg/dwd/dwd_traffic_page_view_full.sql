@@ -9,7 +9,6 @@ SET 'table.exec.sink.upsert-materialize' = 'NONE';
 SET 'sql-client.execution.result-mode' = 'tableau';
 SET 'execution.runtime-mode' = 'batch';
 
-
 CREATE CATALOG iceberg_catalog WITH (
     'type' = 'iceberg',
     'metastore' = 'hive',
@@ -18,10 +17,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_dwd;
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_dwd;
 
 CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_traffic_page_view_full(
     `id`             STRING,
@@ -45,17 +42,17 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_traffic_page_view_full(
     `session_id`     STRING COMMENT '所属会话id',
     `during_time`    BIGINT COMMENT '持续时间毫秒',
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
-    'catalog-name'='hive_prod',
-    'uri'='thrift://192.168.244.129:9083',
-    'warehouse'='hdfs://192.168.244.129:9000/user/hive/warehouse/'
-    );
+    ) PARTITIONED BY (`k1`) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
+);
 
 ALTER TABLE iceberg_dwd.dwd_traffic_page_view_full SET (
     'sink.parallelism' = '10'
     );
 
-INSERT INTO iceberg_dwd.dwd_traffic_page_view_full /*+ OPTIONS('upsert-enabled'='true') */(
+INSERT INTO iceberg_dwd.dwd_traffic_page_view_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     id,
     k1,
     province_id,

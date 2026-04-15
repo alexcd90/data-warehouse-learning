@@ -33,10 +33,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_ods;
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_ods;
 
 CREATE TABLE IF NOT EXISTS iceberg_ods.ods_spu_info_full(
     `id` bigint NOT NULL  COMMENT '商品id',
@@ -45,9 +43,13 @@ CREATE TABLE IF NOT EXISTS iceberg_ods.ods_spu_info_full(
     `category3_id` bigint  NULL COMMENT '三级分类id',
     `tm_id` bigint  NULL COMMENT '品牌id',
     PRIMARY KEY (`id`) NOT ENFORCED
-    );
+    ) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
+);
 
-INSERT INTO iceberg_ods.ods_spu_info_full  /*+ OPTIONS('upsert-enabled'='true') */(
+INSERT INTO iceberg_ods.ods_spu_info_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     `id`,
     `spu_name`,
     `description`,

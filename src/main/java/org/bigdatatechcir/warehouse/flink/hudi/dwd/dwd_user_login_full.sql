@@ -124,7 +124,7 @@ from
                                     common_os operate_system,
                                     ts,
                                     ts session_start_point
-                                from hudi_ods.ods_log_inc
+                                from hudi_ods.ods_log_inc /*+ OPTIONS('read.streaming.enabled' = 'false') */
                                 where  page_last_page_id is not null
                             )t1
                     )t2
@@ -137,6 +137,6 @@ from
         select
             id province_id,
             area_code
-        from hudi_ods.ods_base_province_full
+        from hudi_ods.ods_base_province_full /*+ OPTIONS('read.streaming.enabled' = 'false') */
     )bp
     on t4.area_code=bp.area_code;

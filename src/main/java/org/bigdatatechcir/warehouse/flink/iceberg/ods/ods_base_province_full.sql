@@ -34,11 +34,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_ods;
-
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_ods;
 
 CREATE TABLE IF NOT EXISTS iceberg_ods.ods_base_province_full(
     `id` bigint NOT NULL COMMENT 'id',
@@ -48,9 +45,13 @@ CREATE TABLE IF NOT EXISTS iceberg_ods.ods_base_province_full(
     `iso_code` STRING NULL COMMENT '国际编码',
     `iso_3166_2` STRING NULL COMMENT 'ISO3166编码',
     PRIMARY KEY (`id`) NOT ENFORCED
+    ) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
 
-INSERT INTO iceberg_ods.ods_base_province_full   /*+ OPTIONS('upsert-enabled'='true') */(
+INSERT INTO iceberg_ods.ods_base_province_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     `id` ,
     `name` ,
     `region_id` ,

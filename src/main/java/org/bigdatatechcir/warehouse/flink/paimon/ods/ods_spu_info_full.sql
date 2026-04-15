@@ -1,4 +1,3 @@
--- SPU表（全量表）
 SET 'execution.checkpointing.interval' = '10s';
 SET 'table.exec.state.ttl'= '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
@@ -34,10 +33,8 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS ods;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS ods;
 
 CREATE TABLE IF NOT EXISTS ods.ods_spu_info_full(
     `id` bigint NOT NULL  COMMENT '商品id',
@@ -46,7 +43,12 @@ CREATE TABLE IF NOT EXISTS ods.ods_spu_info_full(
     `category3_id` bigint  NULL COMMENT '三级分类id',
     `tm_id` bigint  NULL COMMENT '品牌id',
     PRIMARY KEY (`id`) NOT ENFORCED
-    );
+    ) WITH (
+    'connector' = 'paimon',
+    'file.format' = 'parquet',
+    'write-buffer-size' = '512mb',
+    'write-buffer-spillable' = 'true'
+);
 
 INSERT INTO ods.ods_spu_info_full(
     `id`,

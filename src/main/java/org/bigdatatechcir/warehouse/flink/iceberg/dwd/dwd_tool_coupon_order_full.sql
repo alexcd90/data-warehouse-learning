@@ -6,7 +6,6 @@ SET 'table.exec.mini-batch.size' = '10000';
 SET 'table.local-time-zone' = 'Asia/Shanghai';
 SET 'table.exec.sink.not-null-enforcer'='DROP';
 SET 'table.exec.sink.upsert-materialize' = 'NONE';
-SET 'execution.runtime-mode' = 'streaming';
 
 CREATE CATALOG iceberg_catalog WITH (
     'type' = 'iceberg',
@@ -16,10 +15,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_dwd;
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_dwd;
 
 CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_tool_coupon_order_full(
     `id`         BIGINT COMMENT '编号',
@@ -30,14 +27,14 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_tool_coupon_order_full(
     `date_id`    STRING COMMENT '日期ID',
     `order_time` TIMESTAMP(3) COMMENT '使用下单时间',
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-    )   PARTITIONED BY (`k1` ) WITH (
-    'catalog-name'='hive_prod',
-    'uri'='thrift://192.168.244.129:9083',
-    'warehouse'='hdfs://192.168.244.129:9000/user/hive/warehouse/'
-    );
+    ) PARTITIONED BY (`k1`) WITH (
+    'catalog-name' = 'hive_prod',
+    'uri' = 'thrift://192.168.244.129:9083',
+    'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
+);
 
 
-insert into iceberg_dwd.dwd_tool_coupon_order_full /*+ OPTIONS('upsert-enabled'='true') */(
+insert into iceberg_dwd.dwd_tool_coupon_order_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     id,
     k1,
     coupon_id,
@@ -54,5 +51,5 @@ select
     order_id,
     date_format(using_time,'yyyy-MM-dd') date_id,
     using_time
-from iceberg_ods.ods_coupon_use_full /*+ OPTIONS('streaming'='true', 'monitor-interval'='1s')*/ ;
+from iceberg_ods.ods_coupon_use_full
 where using_time is not null;

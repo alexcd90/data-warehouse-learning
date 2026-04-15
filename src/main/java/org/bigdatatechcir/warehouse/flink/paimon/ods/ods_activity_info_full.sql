@@ -1,4 +1,3 @@
--- 活动信息表（全量表）
 SET 'execution.checkpointing.interval' = '10s';
 SET 'table.exec.state.ttl'= '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
@@ -36,10 +35,8 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS ods;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS ods;
 
 CREATE TABLE IF NOT EXISTS ods.ods_activity_info_full(
     `id`            BIGINT COMMENT '活动id',
@@ -51,12 +48,12 @@ CREATE TABLE IF NOT EXISTS ods.ods_activity_info_full(
     `end_time`      STRING COMMENT '结束时间',
     `create_time`   STRING COMMENT '创建时间',
     PRIMARY KEY (`id`,`k1` ) NOT ENFORCED
-)   PARTITIONED BY (`k1` ) WITH (
+) PARTITIONED BY (`k1`) WITH (
     'connector' = 'paimon',
     'metastore.partitioned-table' = 'true',
     'file.format' = 'parquet',
     'write-buffer-size' = '512mb',
-    'write-buffer-spillable' = 'true' ,
+    'write-buffer-spillable' = 'true',
     'partition.expiration-time' = '1 d',
     'partition.expiration-check-interval' = '1 h',
     'partition.timestamp-formatter' = 'yyyy-MM-dd',

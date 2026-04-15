@@ -1,4 +1,3 @@
--- 活动规则表（全量表）
 SET 'execution.checkpointing.interval' = '10s';
 SET 'table.exec.state.ttl'= '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
@@ -37,10 +36,8 @@ CREATE CATALOG paimon_hive WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG paimon_hive;
-
-create  DATABASE IF NOT EXISTS ods;
+USE CATALOG paimon_hive;
+CREATE DATABASE IF NOT EXISTS ods;
 
 CREATE TABLE IF NOT EXISTS ods.ods_activity_rule_full(
     `id`               INT COMMENT '编号',
@@ -52,7 +49,12 @@ CREATE TABLE IF NOT EXISTS ods.ods_activity_rule_full(
     `benefit_discount` DECIMAL(16, 2) COMMENT '优惠折扣',
     `benefit_level`    BIGINT COMMENT '优惠级别',
     PRIMARY KEY (`id`) NOT ENFORCED
-    );
+    ) WITH (
+    'connector' = 'paimon',
+    'file.format' = 'parquet',
+    'write-buffer-size' = '512mb',
+    'write-buffer-spillable' = 'true'
+);
 
 INSERT INTO ods.ods_activity_rule_full(
     `id`,

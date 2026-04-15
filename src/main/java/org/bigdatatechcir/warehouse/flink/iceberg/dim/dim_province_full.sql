@@ -6,7 +6,6 @@ SET 'table.exec.mini-batch.size' = '10000';
 SET 'table.local-time-zone' = 'Asia/Shanghai';
 SET 'table.exec.sink.not-null-enforcer'='DROP';
 SET 'table.exec.sink.upsert-materialize' = 'NONE';
-SET 'execution.runtime-mode' = 'streaming';
 
 CREATE CATALOG iceberg_catalog WITH (
     'type' = 'iceberg',
@@ -16,10 +15,8 @@ CREATE CATALOG iceberg_catalog WITH (
     'hadoop-conf-dir' = '/opt/software/hadoop-3.1.3/etc/hadoop',
     'warehouse' = 'hdfs:////user/hive/warehouse'
 );
-
-use CATALOG iceberg_catalog;
-
-create  DATABASE IF NOT EXISTS iceberg_dim;
+USE CATALOG iceberg_catalog;
+CREATE DATABASE IF NOT EXISTS iceberg_dim;
 
 CREATE TABLE IF NOT EXISTS iceberg_dim.dim_province_full(
     `id`            BIGINT COMMENT 'id',
@@ -32,7 +29,7 @@ CREATE TABLE IF NOT EXISTS iceberg_dim.dim_province_full(
     PRIMARY KEY (`id` ) NOT ENFORCED
     );
 
-insert into iceberg_dim.dim_province_full /*+ OPTIONS('upsert-enabled'='true') */(id, province_name, area_code, iso_code, iso_3166_2, region_id, region_name)
+insert into iceberg_dim.dim_province_full /*+ OPTIONS('upsert-enabled' = 'true') */(id, province_name, area_code, iso_code, iso_3166_2, region_id, region_name)
 select
     province.id,
     province.name,
@@ -50,13 +47,13 @@ from
             area_code,
             iso_code,
             iso_3166_2
-        from iceberg_ods.ods_base_province_full /*+ OPTIONS('streaming'='true', 'monitor-interval'='1s')*/
+        from iceberg_ods.ods_base_province_full
     )province
         left join
     (
         select
             id,
             region_name
-        from iceberg_ods.ods_base_region_full /*+ OPTIONS('streaming'='true', 'monitor-interval'='1s')*/
+        from iceberg_ods.ods_base_region_full
     )region
     on province.region_id=region.id;
