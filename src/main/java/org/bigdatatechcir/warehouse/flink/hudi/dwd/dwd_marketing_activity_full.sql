@@ -39,20 +39,7 @@ CREATE TABLE IF NOT EXISTS hudi_dwd.dwd_marketing_activity_full(
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
 );
 
-INSERT INTO hudi_dwd.dwd_marketing_activity_full(
-    id,
-    k1,
-    activity_id,
-    activity_name,
-    activity_type,
-    activity_desc,
-    start_time,
-    end_time,
-    create_time,
-    rules,
-    sku_ids,
-    status
-)
+CREATE TEMPORARY VIEW tmp_dwd_marketing_activity_full_src AS
 WITH act_rule AS (
     SELECT
         activity_id,
@@ -105,3 +92,19 @@ LEFT JOIN act_rule ar
 LEFT JOIN act_sku sku
     ON ai.id = sku.activity_id
 WHERE ai.k1 = '${pdate}';
+
+INSERT INTO hudi_dwd.dwd_marketing_activity_full(
+    id,
+    k1,
+    activity_id,
+    activity_name,
+    activity_type,
+    activity_desc,
+    start_time,
+    end_time,
+    create_time,
+    rules,
+    sku_ids,
+    status
+)
+SELECT * FROM tmp_dwd_marketing_activity_full_src;

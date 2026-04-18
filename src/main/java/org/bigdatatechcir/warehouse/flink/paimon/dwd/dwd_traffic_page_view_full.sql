@@ -54,10 +54,6 @@ CREATE TABLE IF NOT EXISTS dwd.dwd_traffic_page_view_full(
     'partition.timestamp-pattern' = '$k1'
 );
 
-ALTER TABLE dwd.dwd_traffic_page_view_full SET (
-    'sink.parallelism' = '10'
-    );
-
 INSERT INTO dwd.dwd_traffic_page_view_full(
     id,
     k1,

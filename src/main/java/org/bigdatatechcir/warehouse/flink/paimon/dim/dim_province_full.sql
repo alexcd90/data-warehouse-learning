@@ -27,6 +27,11 @@ CREATE TABLE IF NOT EXISTS dim.dim_province_full(
     `region_id`     STRING COMMENT '地区id',
     `region_name`   STRING COMMENT '地区名称',
     PRIMARY KEY (`id` ) NOT ENFORCED
+    ) WITH (
+      'connector' = 'paimon',
+      'file.format' = 'parquet',
+      'write-buffer-size' = '512mb',
+      'write-buffer-spillable' = 'true'
     );
 
 insert into dim.dim_province_full(id, province_name, area_code, iso_code, iso_3166_2, region_id, region_name)

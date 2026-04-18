@@ -19,17 +19,17 @@ USE CATALOG hudi_catalog;
 CREATE DATABASE IF NOT EXISTS hudi_ads;
 
 CREATE TABLE IF NOT EXISTS hudi_ads.ads_sku_cart_num_top3_by_cate_full(
-    `dt` STRING COMMENT '统计日期',
-    `category1_id` STRING COMMENT '一级分类ID',
-    `category1_name` STRING COMMENT '一级分类名称',
-    `category2_id` STRING COMMENT '二级分类ID',
-    `category2_name` STRING COMMENT '二级分类名称',
-    `category3_id` STRING COMMENT '三级分类ID',
-    `category3_name` STRING COMMENT '三级分类名称',
-    `sku_id` STRING COMMENT '商品id',
-    `sku_name` STRING COMMENT '商品名称',
-    `cart_num` BIGINT COMMENT '购物车中商品数量',
-    `rk` BIGINT COMMENT '排名',
+    `dt` STRING COMMENT 'stat date',
+    `category1_id` STRING COMMENT 'category1 id',
+    `category1_name` STRING COMMENT 'category1 name',
+    `category2_id` STRING COMMENT 'category2 id',
+    `category2_name` STRING COMMENT 'category2 name',
+    `category3_id` STRING COMMENT 'category3 id',
+    `category3_name` STRING COMMENT 'category3 name',
+    `sku_id` STRING COMMENT 'sku id',
+    `sku_name` STRING COMMENT 'sku name',
+    `cart_num` BIGINT COMMENT 'cart num',
+    `rk` BIGINT COMMENT 'rank',
     PRIMARY KEY (`dt`, `category1_id`, `category2_id`, `category3_id`, `sku_id`, `rk`) NOT ENFORCED
 ) WITH (
     'connector' = 'hudi',
@@ -39,61 +39,78 @@ CREATE TABLE IF NOT EXISTS hudi_ads.ads_sku_cart_num_top3_by_cate_full(
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
 );
 
-INSERT INTO hudi_ads.ads_sku_cart_num_top3_by_cate_full (dt, category1_id, category1_name, category2_id, category2_name, category3_id, category3_name, sku_id, sku_name, cart_num, rk)
-select * from hudi_ads.ads_sku_cart_num_top10_by_cate
-union
-select
-    CAST('${pdate}' AS DATE) dt,                -- 统计日期
-    category1_id,                       -- 一级类目ID
-    category1_name,                     -- 一级类目名称
-    category2_id,                       -- 二级类目ID
-    category2_name,                     -- 二级类目名称
-    category3_id,                       -- 三级类目ID
-    category3_name,                     -- 三级类目名称
-    sku_id,                             -- 商品ID
-    sku_name,                           -- 商品名称
-    cart_num,                           -- 购物车中商品数量
-    rk                                  -- 排名
-from
-    (
-    -- 对各级类目内的商品按购物车数量进行排名
-    select
-    sku_id,
-    sku_name,
+CREATE TEMPORARY TABLE tmp_ads_sku_cart_num_top3_cart_snapshot
+WITH (
+    'read.streaming.enabled' = 'false'
+)
+LIKE hudi_dwd.dwd_trade_cart_full;
+
+CREATE TEMPORARY TABLE tmp_ads_sku_cart_num_top3_dim_sku_snapshot
+WITH (
+    'read.streaming.enabled' = 'false'
+)
+LIKE hudi_dim.dim_sku_full;
+
+INSERT INTO hudi_ads.ads_sku_cart_num_top3_by_cate_full(
+    dt,
     category1_id,
     category1_name,
     category2_id,
     category2_name,
     category3_id,
     category3_name,
-    cart_num,
-    -- 计算在三级类目内的购物车数量排名
-    rank() over (partition by category1_id,category2_id,category3_id order by cart_num desc) rk
-    from
-    (
-    -- 计算购物车中各商品的数量
-    select
     sku_id,
-    sum(sku_num) cart_num               -- 购物车中商品总数量
-    from hudi_dwd.dwd_trade_cart_full        -- 使用全量购物车事实表
-    where k1 = '${pdate}'         -- 取当天分区数据
-    group by sku_id
-    )cart
-    left join
-    (
-    -- 获取商品维度信息
-    select
-    id,
-    sku_name,                          -- 商品名称
-    category1_id,                      -- 一级类目ID
-    category1_name,                    -- 一级类目名称
-    category2_id,                      -- 二级类目ID
-    category2_name,                    -- 二级类目名称
-    category3_id,                      -- 三级类目ID
-    category3_name                     -- 三级类目名称
-    from hudi_dim.dim_sku_full              -- 使用商品维度全量表
-    )sku
-    on cart.sku_id=sku.id              -- 关联购物车数据和商品维度信息
-    )t1
-where rk<=3;
-
+    sku_name,
+    cart_num,
+    rk
+)
+SELECT
+    '${pdate}' AS dt,
+    CAST(category1_id AS STRING) AS category1_id,
+    category1_name,
+    CAST(category2_id AS STRING) AS category2_id,
+    category2_name,
+    CAST(category3_id AS STRING) AS category3_id,
+    category3_name,
+    CAST(sku_id AS STRING) AS sku_id,
+    sku_name,
+    cart_num,
+    CAST(rk AS BIGINT) AS rk
+FROM (
+    SELECT
+        sku_dim.category1_id,
+        sku_dim.category1_name,
+        sku_dim.category2_id,
+        sku_dim.category2_name,
+        sku_dim.category3_id,
+        sku_dim.category3_name,
+        cart.sku_id,
+        sku_dim.sku_name,
+        cart.cart_num,
+        RANK() OVER (
+            PARTITION BY sku_dim.category1_id, sku_dim.category2_id, sku_dim.category3_id
+            ORDER BY cart.cart_num DESC, cart.sku_id
+        ) AS rk
+    FROM (
+        SELECT
+            sku_id,
+            SUM(sku_num) AS cart_num
+        FROM tmp_ads_sku_cart_num_top3_cart_snapshot
+        WHERE k1 = '${pdate}'
+        GROUP BY sku_id
+    ) cart
+    LEFT JOIN (
+        SELECT
+            id,
+            sku_name,
+            category1_id,
+            category1_name,
+            category2_id,
+            category2_name,
+            category3_id,
+            category3_name
+        FROM tmp_ads_sku_cart_num_top3_dim_sku_snapshot
+    ) sku_dim
+        ON cart.sku_id = sku_dim.id
+) ranked
+WHERE rk <= 3;

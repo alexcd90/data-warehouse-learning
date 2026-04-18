@@ -27,6 +27,10 @@ CREATE TABLE IF NOT EXISTS iceberg_dim.dim_province_full(
     `region_id`     STRING COMMENT '地区id',
     `region_name`   STRING COMMENT '地区名称',
     PRIMARY KEY (`id` ) NOT ENFORCED
+    ) WITH (
+      'catalog-name' = 'hive_prod',
+      'uri' = 'thrift://192.168.244.129:9083',
+      'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
     );
 
 insert into iceberg_dim.dim_province_full /*+ OPTIONS('upsert-enabled' = 'true') */(id, province_name, area_code, iso_code, iso_3166_2, region_id, region_name)

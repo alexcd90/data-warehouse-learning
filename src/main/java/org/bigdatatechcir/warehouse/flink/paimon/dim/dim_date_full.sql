@@ -51,6 +51,11 @@ CREATE TABLE IF NOT EXISTS dim.dim_date_full(
     `is_workday` int COMMENT '是否是工作日',
     `holiday_id` VARCHAR(255) COMMENT '节假日',
     PRIMARY KEY (`date_id` ) NOT ENFORCED
+    ) WITH (
+      'connector' = 'paimon',
+      'file.format' = 'parquet',
+      'write-buffer-size' = '512mb',
+      'write-buffer-spillable' = 'true'
     );
 
 INSERT INTO dim.dim_date_full(

@@ -51,6 +51,10 @@ CREATE TABLE IF NOT EXISTS iceberg_dim.dim_date_full(
     `is_workday` int COMMENT '是否是工作日',
     `holiday_id` VARCHAR(255) COMMENT '节假日',
     PRIMARY KEY (`date_id` ) NOT ENFORCED
+    ) WITH (
+      'catalog-name' = 'hive_prod',
+      'uri' = 'thrift://192.168.244.129:9083',
+      'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
     );
 
 INSERT INTO iceberg_dim.dim_date_full /*+ OPTIONS('upsert-enabled' = 'true') */(

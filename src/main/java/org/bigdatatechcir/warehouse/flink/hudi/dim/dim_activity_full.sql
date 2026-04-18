@@ -80,8 +80,8 @@ select
     rule.benefit_discount,
     case rule.activity_type
         when '3101' then concat('满', cast(rule.condition_amount as STRING), '元减', cast(rule.benefit_amount as STRING), '元')
-        when '3102' then concat('满', cast(rule.condition_num as STRING), '件打', cast((10 * (1 - rule.benefit_discount)) as STRING), '折')
-        when '3103' then concat('打', cast((10 * (1 - rule.benefit_discount)) as STRING), '折')
+        when '3102' then concat('满', cast(rule.condition_num as STRING), '件打', cast((rule.benefit_discount * 10) as STRING), '折')
+        when '3103' then concat('打', cast((rule.benefit_discount * 10) as STRING), '折')
     end as benefit_rule,
     rule.benefit_level,
     sku.sku_ids

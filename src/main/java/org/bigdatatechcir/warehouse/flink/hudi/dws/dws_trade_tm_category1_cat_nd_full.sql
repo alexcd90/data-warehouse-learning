@@ -68,57 +68,17 @@ CREATE TABLE IF NOT EXISTS hudi_dws.dws_trade_tm_category1_cat_nd_full(
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
 );
 
-INSERT INTO hudi_dws.dws_trade_tm_category1_cat_nd_full(
-    tm_id,
-    category1_id,
-    k1,
-    tm_name,
-    category1_name,
-    order_count_1d,
-    order_num_1d,
-    order_user_count_1d,
-    order_sku_count_1d,
-    order_original_amount_1d,
-    activity_reduce_amount_1d,
-    coupon_reduce_amount_1d,
-    order_total_amount_1d,
-    order_count_7d,
-    order_num_7d,
-    order_user_count_7d,
-    order_sku_count_7d,
-    order_original_amount_7d,
-    activity_reduce_amount_7d,
-    coupon_reduce_amount_7d,
-    order_total_amount_7d,
-    order_count_30d,
-    order_num_30d,
-    order_user_count_30d,
-    order_sku_count_30d,
-    order_original_amount_30d,
-    activity_reduce_amount_30d,
-    coupon_reduce_amount_30d,
-    order_total_amount_30d,
-    order_count_1d_wow_rate,
-    order_total_amount_1d_wow_rate,
-    order_count_7d_wow_rate,
-    order_total_amount_7d_wow_rate,
-    order_count_1d_yoy_rate,
-    order_total_amount_1d_yoy_rate,
-    category_amount_ratio_1d,
-    tm_amount_ratio_1d,
-    sku_coverage_rate_1d,
-    cat_1d_type,
-    cat_7d_type
-)
+CREATE TEMPORARY VIEW tmp_dws_trade_tm_category1_cat_nd_full_src AS
 WITH date_param AS (
     SELECT CAST('${pdate}' AS DATE) AS cur_date
 ),
 max_sku_date AS (
-    SELECT MAX(k1) AS max_k1 FROM hudi_dim.dim_sku_full
+    SELECT MAX(k1) AS max_k1
+    FROM hudi_dim.dim_sku_full /*+ OPTIONS('read.streaming.enabled' = 'false') */
 ),
 latest_sku AS (
     SELECT s.*
-    FROM hudi_dim.dim_sku_full s
+    FROM hudi_dim.dim_sku_full /*+ OPTIONS('read.streaming.enabled' = 'false') */ s
     CROSS JOIN max_sku_date m
     WHERE s.k1 = m.max_k1
 ),
@@ -128,8 +88,6 @@ detail_by_day_sku AS (
         COALESCE(CAST(s.category1_id AS STRING), '') AS category1_id,
         CAST(od.k1 AS DATE) AS dt,
         CAST(od.sku_id AS STRING) AS sku_id,
-        CAST(od.order_id AS STRING) AS order_id,
-        CAST(od.user_id AS STRING) AS user_id,
         COALESCE(s.tm_name, '') AS tm_name,
         COALESCE(s.category1_name, '') AS category1_name,
         COUNT(DISTINCT od.order_id) AS order_count,
@@ -139,7 +97,7 @@ detail_by_day_sku AS (
         SUM(COALESCE(od.split_activity_amount, CAST(0 AS DECIMAL(16, 2)))) AS activity_reduce_amount,
         SUM(COALESCE(od.split_coupon_amount, CAST(0 AS DECIMAL(16, 2)))) AS coupon_reduce_amount,
         SUM(od.split_total_amount) AS order_total_amount
-    FROM hudi_dwd.dwd_trade_order_detail_full od
+    FROM hudi_dwd.dwd_trade_order_detail_full /*+ OPTIONS('read.streaming.enabled' = 'false') */ od
     LEFT JOIN latest_sku s
         ON od.sku_id = s.id
     GROUP BY
@@ -407,3 +365,47 @@ LEFT JOIN tm_total tt
     ON cd.tm_id = tt.tm_id
 LEFT JOIN category_total ct
     ON cd.category1_id = ct.category1_id;
+
+INSERT INTO hudi_dws.dws_trade_tm_category1_cat_nd_full(
+    tm_id,
+    category1_id,
+    k1,
+    tm_name,
+    category1_name,
+    order_count_1d,
+    order_num_1d,
+    order_user_count_1d,
+    order_sku_count_1d,
+    order_original_amount_1d,
+    activity_reduce_amount_1d,
+    coupon_reduce_amount_1d,
+    order_total_amount_1d,
+    order_count_7d,
+    order_num_7d,
+    order_user_count_7d,
+    order_sku_count_7d,
+    order_original_amount_7d,
+    activity_reduce_amount_7d,
+    coupon_reduce_amount_7d,
+    order_total_amount_7d,
+    order_count_30d,
+    order_num_30d,
+    order_user_count_30d,
+    order_sku_count_30d,
+    order_original_amount_30d,
+    activity_reduce_amount_30d,
+    coupon_reduce_amount_30d,
+    order_total_amount_30d,
+    order_count_1d_wow_rate,
+    order_total_amount_1d_wow_rate,
+    order_count_7d_wow_rate,
+    order_total_amount_7d_wow_rate,
+    order_count_1d_yoy_rate,
+    order_total_amount_1d_yoy_rate,
+    category_amount_ratio_1d,
+    tm_amount_ratio_1d,
+    sku_coverage_rate_1d,
+    cat_1d_type,
+    cat_7d_type
+)
+SELECT * FROM tmp_dws_trade_tm_category1_cat_nd_full_src;

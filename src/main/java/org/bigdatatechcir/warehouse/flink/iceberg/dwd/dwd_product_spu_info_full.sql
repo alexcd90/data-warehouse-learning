@@ -44,26 +44,7 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_product_spu_info_full(
     'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
 
-INSERT INTO iceberg_dwd.dwd_product_spu_info_full /*+ OPTIONS('upsert-enabled' = 'true') */(
-    id,
-    k1,
-    spu_id,
-    spu_name,
-    description,
-    tm_id,
-    tm_name,
-    category1_id,
-    category1_name,
-    category2_id,
-    category2_name,
-    category3_id,
-    category3_name,
-    default_img,
-    create_time,
-    sale_attrs,
-    images,
-    posters
-)
+CREATE TEMPORARY VIEW tmp_dwd_product_spu_info_full_src AS
 WITH img AS (
     SELECT
         spu_id,
@@ -128,3 +109,25 @@ LEFT JOIN sale_attr sa
     ON sp.id = sa.spu_id
 LEFT JOIN poster po
     ON sp.id = po.spu_id;
+
+INSERT INTO iceberg_dwd.dwd_product_spu_info_full /*+ OPTIONS('upsert-enabled' = 'true') */(
+    id,
+    k1,
+    spu_id,
+    spu_name,
+    description,
+    tm_id,
+    tm_name,
+    category1_id,
+    category1_name,
+    category2_id,
+    category2_name,
+    category3_id,
+    category3_name,
+    default_img,
+    create_time,
+    sale_attrs,
+    images,
+    posters
+)
+SELECT * FROM tmp_dwd_product_spu_info_full_src;

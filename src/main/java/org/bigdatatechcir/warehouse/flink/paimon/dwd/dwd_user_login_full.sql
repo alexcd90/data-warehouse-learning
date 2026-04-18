@@ -45,10 +45,6 @@ CREATE TABLE IF NOT EXISTS dwd.dwd_user_login_full(
     'partition.timestamp-pattern' = '$k1'
 );
 
-ALTER TABLE dwd.dwd_user_login_full SET (
-    'sink.parallelism' = '10'
-    );
-
 INSERT INTO dwd.dwd_user_login_full(
     k1,
     user_id,

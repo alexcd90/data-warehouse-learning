@@ -39,20 +39,7 @@ CREATE TABLE IF NOT EXISTS hudi_dwd.dwd_user_register_full(
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
 );
 
-INSERT INTO hudi_dwd.dwd_user_register_full(
-    id,
-    k1,
-    user_id,
-    date_id,
-    create_time,
-    channel,
-    province_id,
-    version_code,
-    mid_id,
-    brand,
-    model,
-    operate_system
-)
+CREATE TEMPORARY VIEW tmp_dwd_user_register_full_src AS
 WITH register_log AS (
     SELECT
         user_id,
@@ -107,3 +94,19 @@ LEFT JOIN register_log log
     ON CAST(ui.user_id AS STRING) = log.user_id
 LEFT JOIN hudi_ods.ods_base_province_full bp
     ON log.area_code = bp.area_code;
+
+INSERT INTO hudi_dwd.dwd_user_register_full(
+    id,
+    k1,
+    user_id,
+    date_id,
+    create_time,
+    channel,
+    province_id,
+    version_code,
+    mid_id,
+    brand,
+    model,
+    operate_system
+)
+SELECT * FROM tmp_dwd_user_register_full_src;

@@ -45,6 +45,18 @@ CREATE TABLE IF NOT EXISTS hudi_ads.ads_sales_trend_forecast_full(
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
 );
 
+CREATE TEMPORARY TABLE tmp_ads_sales_trend_forecast_order_detail_snapshot
+WITH (
+    'read.streaming.enabled' = 'false'
+)
+LIKE hudi_dwd.dwd_trade_order_detail_full;
+
+CREATE TEMPORARY TABLE tmp_ads_sales_trend_forecast_dim_sku_snapshot
+WITH (
+    'read.streaming.enabled' = 'false'
+)
+LIKE hudi_dim.dim_sku_full;
+
 CREATE TEMPORARY VIEW tmp_ads_sales_trend_forecast_current_date_param AS
 SELECT CAST('${pdate}' AS DATE) AS cur_date
 ;
@@ -79,7 +91,7 @@ SELECT
     COUNT(DISTINCT od.order_id) AS order_count,
     AVG(CAST(0 AS DOUBLE)) + SUM(CAST(od.split_total_amount AS DOUBLE)) AS order_amount,
     COUNT(DISTINCT od.user_id) AS user_count
-FROM hudi_dwd.dwd_trade_order_detail_full /*+ OPTIONS('read.streaming.enabled' = 'false') */ od
+FROM tmp_ads_sales_trend_forecast_order_detail_snapshot od
 CROSS JOIN tmp_ads_sales_trend_forecast_current_date_param cp
 WHERE CAST(od.k1 AS DATE) BETWEEN cp.cur_date - INTERVAL '89' DAY AND cp.cur_date
 GROUP BY CAST(od.k1 AS DATE)
@@ -126,10 +138,10 @@ SELECT
     s.id,
     CAST(s.category1_id AS STRING) AS category1_id,
     COALESCE(s.category1_name, '') AS category1_name
-FROM hudi_dim.dim_sku_full /*+ OPTIONS('read.streaming.enabled' = 'false') */ s
+FROM tmp_ads_sales_trend_forecast_dim_sku_snapshot s
 JOIN (
     SELECT MAX(k1) AS max_k1
-    FROM hudi_dim.dim_sku_full /*+ OPTIONS('read.streaming.enabled' = 'false') */
+    FROM tmp_ads_sales_trend_forecast_dim_sku_snapshot
 ) m
     ON s.k1 = m.max_k1
 WHERE s.category1_id IS NOT NULL
@@ -143,7 +155,7 @@ SELECT
     COUNT(DISTINCT od.order_id) AS order_count,
     AVG(CAST(0 AS DOUBLE)) + SUM(CAST(od.split_total_amount AS DOUBLE)) AS order_amount,
     COUNT(DISTINCT od.user_id) AS user_count
-FROM hudi_dwd.dwd_trade_order_detail_full /*+ OPTIONS('read.streaming.enabled' = 'false') */ od
+FROM tmp_ads_sales_trend_forecast_order_detail_snapshot od
 JOIN tmp_ads_sales_trend_forecast_sku_dim sd
     ON od.sku_id = sd.id
 CROSS JOIN tmp_ads_sales_trend_forecast_current_date_param cp

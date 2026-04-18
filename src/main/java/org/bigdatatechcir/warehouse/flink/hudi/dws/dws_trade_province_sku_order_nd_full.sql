@@ -68,48 +68,7 @@ CREATE TABLE IF NOT EXISTS hudi_dws.dws_trade_province_sku_order_nd_full(
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
 );
 
-INSERT INTO hudi_dws.dws_trade_province_sku_order_nd_full(
-    province_id,
-    sku_id,
-    k1,
-    province_name,
-    province_area_code,
-    province_iso_code,
-    sku_name,
-    category1_id,
-    category1_name,
-    category2_id,
-    category2_name,
-    category3_id,
-    category3_name,
-    tm_id,
-    tm_name,
-    order_count_1d,
-    order_num_1d,
-    order_user_count_1d,
-    order_original_amount_1d,
-    activity_reduce_amount_1d,
-    coupon_reduce_amount_1d,
-    order_total_amount_1d,
-    order_count_7d,
-    order_num_7d,
-    order_user_count_7d,
-    order_original_amount_7d,
-    activity_reduce_amount_7d,
-    coupon_reduce_amount_7d,
-    order_total_amount_7d,
-    order_count_30d,
-    order_num_30d,
-    order_user_count_30d,
-    order_original_amount_30d,
-    activity_reduce_amount_30d,
-    coupon_reduce_amount_30d,
-    order_total_amount_30d,
-    order_count_1d_wow_rate,
-    order_count_1d_yoy_rate,
-    order_total_amount_1d_wow_rate,
-    order_total_amount_1d_yoy_rate
-)
+CREATE TEMPORARY VIEW tmp_dws_trade_province_sku_order_nd_full_src AS
 WITH date_param AS (
     SELECT CAST('${pdate}' AS DATE) AS cur_date
 ),
@@ -292,3 +251,47 @@ LEFT JOIN last_week_data lw
 LEFT JOIN last_year_data ly
     ON cd.province_id = ly.province_id
    AND cd.sku_id = ly.sku_id;
+
+INSERT INTO hudi_dws.dws_trade_province_sku_order_nd_full(
+    province_id,
+    sku_id,
+    k1,
+    province_name,
+    province_area_code,
+    province_iso_code,
+    sku_name,
+    category1_id,
+    category1_name,
+    category2_id,
+    category2_name,
+    category3_id,
+    category3_name,
+    tm_id,
+    tm_name,
+    order_count_1d,
+    order_num_1d,
+    order_user_count_1d,
+    order_original_amount_1d,
+    activity_reduce_amount_1d,
+    coupon_reduce_amount_1d,
+    order_total_amount_1d,
+    order_count_7d,
+    order_num_7d,
+    order_user_count_7d,
+    order_original_amount_7d,
+    activity_reduce_amount_7d,
+    coupon_reduce_amount_7d,
+    order_total_amount_7d,
+    order_count_30d,
+    order_num_30d,
+    order_user_count_30d,
+    order_original_amount_30d,
+    activity_reduce_amount_30d,
+    coupon_reduce_amount_30d,
+    order_total_amount_30d,
+    order_count_1d_wow_rate,
+    order_count_1d_yoy_rate,
+    order_total_amount_1d_wow_rate,
+    order_total_amount_1d_yoy_rate
+)
+SELECT * FROM tmp_dws_trade_province_sku_order_nd_full_src;

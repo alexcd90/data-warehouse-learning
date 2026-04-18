@@ -50,6 +50,12 @@ CREATE TABLE IF NOT EXISTS hudi_dim.dim_date_full(
     `is_workday` int COMMENT '是否是工作日',
     `holiday_id` VARCHAR(255) COMMENT '节假日',
     PRIMARY KEY (`date_id` ) NOT ENFORCED
+    ) WITH (
+      'connector' = 'hudi',
+      'table.type' = 'MERGE_ON_READ',
+      'read.streaming.enabled' = 'true',
+      'read.streaming.check-interval' = '4',
+      'hive_sync.conf.dir'='/opt/software/apache-hive-3.1.3-bin/conf'
     );
 
 INSERT INTO hudi_dim.dim_date_full(

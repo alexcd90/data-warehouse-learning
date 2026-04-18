@@ -49,10 +49,6 @@ CREATE TABLE IF NOT EXISTS hudi_dwd.dwd_traffic_page_view_full(
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
     );
 
-ALTER TABLE hudi_dwd.dwd_traffic_page_view_full SET (
-    'sink.parallelism' = '10'
-    );
-
 INSERT INTO hudi_dwd.dwd_traffic_page_view_full(
     id,
     k1,

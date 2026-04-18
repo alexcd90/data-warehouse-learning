@@ -47,29 +47,7 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_product_sku_info_full(
     'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
 
-INSERT INTO iceberg_dwd.dwd_product_sku_info_full /*+ OPTIONS('upsert-enabled' = 'true') */(
-    id,
-    k1,
-    sku_id,
-    spu_id,
-    price,
-    sku_name,
-    sku_desc,
-    weight,
-    tm_id,
-    tm_name,
-    category1_id,
-    category1_name,
-    category2_id,
-    category2_name,
-    category3_id,
-    category3_name,
-    default_img,
-    create_time,
-    attr_values,
-    sale_attr_values,
-    sku_cost
-)
+CREATE TEMPORARY VIEW tmp_dwd_product_sku_info_full_src AS
 WITH attr AS (
     SELECT
         sku_id,
@@ -130,3 +108,28 @@ LEFT JOIN sale_attr
 LEFT JOIN cost
     ON s.id = cost.sku_id
 WHERE s.k1 = '${pdate}';
+
+INSERT INTO iceberg_dwd.dwd_product_sku_info_full /*+ OPTIONS('upsert-enabled' = 'true') */(
+    id,
+    k1,
+    sku_id,
+    spu_id,
+    price,
+    sku_name,
+    sku_desc,
+    weight,
+    tm_id,
+    tm_name,
+    category1_id,
+    category1_name,
+    category2_id,
+    category2_name,
+    category3_id,
+    category3_name,
+    default_img,
+    create_time,
+    attr_values,
+    sale_attr_values,
+    sku_cost
+)
+SELECT * FROM tmp_dwd_product_sku_info_full_src;

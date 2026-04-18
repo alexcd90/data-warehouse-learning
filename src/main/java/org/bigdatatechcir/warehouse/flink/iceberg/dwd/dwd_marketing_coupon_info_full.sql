@@ -40,22 +40,7 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_marketing_coupon_info_full(
     'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
 
-INSERT INTO iceberg_dwd.dwd_marketing_coupon_info_full /*+ OPTIONS('upsert-enabled' = 'true') */(
-    id,
-    k1,
-    coupon_id,
-    coupon_name,
-    coupon_type,
-    condition_amount,
-    benefit_amount,
-    start_time,
-    end_time,
-    create_time,
-    range_type,
-    range_ids,
-    range_names,
-    limit_num
-)
+CREATE TEMPORARY VIEW tmp_dwd_marketing_coupon_info_full_src AS
 WITH coupon_range AS (
     SELECT
         coupon_id,
@@ -88,3 +73,21 @@ FROM iceberg_ods.ods_coupon_info_full ci
 LEFT JOIN coupon_range cr
     ON ci.id = cr.coupon_id
 WHERE ci.k1 = '${pdate}';
+
+INSERT INTO iceberg_dwd.dwd_marketing_coupon_info_full /*+ OPTIONS('upsert-enabled' = 'true') */(
+    id,
+    k1,
+    coupon_id,
+    coupon_name,
+    coupon_type,
+    condition_amount,
+    benefit_amount,
+    start_time,
+    end_time,
+    create_time,
+    range_type,
+    range_ids,
+    range_names,
+    limit_num
+)
+SELECT * FROM tmp_dwd_marketing_coupon_info_full_src;

@@ -39,10 +39,6 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_user_login_full(
     'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
 
-ALTER TABLE iceberg_dwd.dwd_user_login_full SET (
-    'sink.parallelism' = '10'
-    );
-
 INSERT INTO iceberg_dwd.dwd_user_login_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     k1,
     user_id,

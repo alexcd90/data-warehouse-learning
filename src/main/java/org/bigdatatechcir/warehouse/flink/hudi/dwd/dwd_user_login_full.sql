@@ -40,10 +40,6 @@ CREATE TABLE IF NOT EXISTS hudi_dwd.dwd_user_login_full(
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
     );
 
-ALTER TABLE hudi_dwd.dwd_user_login_full SET (
-    'sink.parallelism' = '10'
-    );
-
 INSERT INTO hudi_dwd.dwd_user_login_full(
     k1,
     user_id,

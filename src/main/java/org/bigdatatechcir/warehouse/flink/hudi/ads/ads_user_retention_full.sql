@@ -19,12 +19,12 @@ USE CATALOG hudi_catalog;
 CREATE DATABASE IF NOT EXISTS hudi_ads;
 
 CREATE TABLE IF NOT EXISTS hudi_ads.ads_user_retention_full(
-    `dt` STRING COMMENT '统计日期',
-    `create_date` STRING COMMENT '用户新增日期',
-    `retention_day` INT COMMENT '截至当前日期留存天数',
-    `retention_count` BIGINT COMMENT '留存用户数量',
-    `new_user_count` BIGINT COMMENT '新增用户数量',
-    `retention_rate` DECIMAL(16, 2) COMMENT '留存率',
+    `dt` STRING COMMENT 'stat date',
+    `create_date` STRING COMMENT 'register date',
+    `retention_day` INT COMMENT 'retention days',
+    `retention_count` BIGINT COMMENT 'retained user count',
+    `new_user_count` BIGINT COMMENT 'new user count',
+    `retention_rate` DECIMAL(16, 2) COMMENT 'retention rate',
     PRIMARY KEY (`dt`, `create_date`, `retention_day`) NOT ENFORCED
 ) WITH (
     'connector' = 'hudi',
@@ -34,36 +34,50 @@ CREATE TABLE IF NOT EXISTS hudi_ads.ads_user_retention_full(
     'hive_sync.conf.dir' = '/opt/software/apache-hive-3.1.3-bin/conf'
 );
 
-INSERT INTO hudi_ads.ads_user_retention_full (dt, create_date, retention_day, retention_count, new_user_count, retention_rate)
-select * from hudi_ads.ads_user_retention
-union
-select
-    CAST('${pdate}' AS DATE) dt,                      -- 统计日期
-    login_date_first create_date,             -- 用户注册日期
-    datediff(CAST('${pdate}' AS DATE),login_date_first) retention_day,  -- 留存天数
-    sum(if(login_date_last=CAST('${pdate}' AS DATE),1,0)) retention_count,  -- 留存用户数
-    count(*) new_user_count,                  -- 新增用户数
-    cast(sum(if(login_date_last=CAST('${pdate}' AS DATE),1,0))/count(*)*100 as decimal(16,2)) retention_rate  -- 留存率
-from
-    (
-    -- 获取最近7天内注册的用户
-    select
-    user_id,
-    date_id login_date_first                  -- 注册日期
-    from hudi_dwd.dwd_user_register_full            -- 使用DWD层的用户注册事实表
-    where k1>=date_add(CAST('${pdate}' AS DATE),-7)   -- 最近7天内注册的用户
-    and k1 < CAST('${pdate}' AS DATE)                 -- 排除今日注册的用户
+CREATE TEMPORARY TABLE tmp_ads_user_retention_register_snapshot
+WITH (
+    'read.streaming.enabled' = 'false'
+)
+LIKE hudi_dwd.dwd_user_register_full;
 
-    )t1
-    join
-    (
-    -- 获取用户的最后登录日期
-    select
-    user_id,
-    login_date_last                           -- 最后登录日期
-    from hudi_dws.dws_user_user_login_td_full           -- 使用DWS层的用户登录历史表
-    where k1 = '${pdate}'               -- 取当天分区数据
-    )t2
-on t1.user_id=t2.user_id                      -- 关联用户ID
-group by login_date_first;
+CREATE TEMPORARY TABLE tmp_ads_user_retention_login_snapshot
+WITH (
+    'read.streaming.enabled' = 'false'
+)
+LIKE hudi_dws.dws_user_user_login_td_full;
 
+INSERT INTO hudi_ads.ads_user_retention_full(
+    dt,
+    create_date,
+    retention_day,
+    retention_count,
+    new_user_count,
+    retention_rate
+)
+SELECT
+    '${pdate}' AS dt,
+    CAST(t1.login_date_first AS STRING) AS create_date,
+    TIMESTAMPDIFF(DAY, t1.login_date_first, CAST('${pdate}' AS DATE)) AS retention_day,
+    SUM(CASE WHEN t2.login_date_last = CAST('${pdate}' AS DATE) THEN 1 ELSE 0 END) AS retention_count,
+    COUNT(*) AS new_user_count,
+    CAST(
+        SUM(CASE WHEN t2.login_date_last = CAST('${pdate}' AS DATE) THEN 1 ELSE 0 END) * 100.0
+        / COUNT(*) AS DECIMAL(16, 2)
+    ) AS retention_rate
+FROM (
+    SELECT
+        CAST(user_id AS STRING) AS user_id,
+        CAST(date_id AS DATE) AS login_date_first
+    FROM tmp_ads_user_retention_register_snapshot
+    WHERE CAST(k1 AS DATE) >= TIMESTAMPADD(DAY, -7, CAST('${pdate}' AS DATE))
+      AND CAST(k1 AS DATE) < CAST('${pdate}' AS DATE)
+) t1
+JOIN (
+    SELECT
+        CAST(user_id AS STRING) AS user_id,
+        CAST(login_date_last AS DATE) AS login_date_last
+    FROM tmp_ads_user_retention_login_snapshot
+    WHERE k1 = '${pdate}'
+) t2
+    ON t1.user_id = t2.user_id
+GROUP BY t1.login_date_first;

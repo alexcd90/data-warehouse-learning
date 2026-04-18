@@ -26,6 +26,12 @@ CREATE TABLE IF NOT EXISTS hudi_dim.dim_province_full(
     `region_id`     STRING COMMENT '地区id',
     `region_name`   STRING COMMENT '地区名称',
     PRIMARY KEY (`id` ) NOT ENFORCED
+    ) WITH (
+      'connector' = 'hudi',
+      'table.type' = 'MERGE_ON_READ',
+      'read.streaming.enabled' = 'true',
+      'read.streaming.check-interval' = '4',
+      'hive_sync.conf.dir'='/opt/software/apache-hive-3.1.3-bin/conf'
     );
 
 insert into hudi_dim.dim_province_full(id, province_name, area_code, iso_code, iso_3166_2, region_id, region_name)

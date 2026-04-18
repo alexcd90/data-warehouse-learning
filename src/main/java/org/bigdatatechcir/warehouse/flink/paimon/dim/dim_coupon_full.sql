@@ -91,7 +91,7 @@ select
     ci.benefit_discount,
     case ci.coupon_type
         when '3201' then concat('满', cast(ci.condition_amount as STRING), '元减', cast(ci.benefit_amount as STRING), '元')
-        when '3202' then concat('满', cast(ci.condition_num as STRING), '件打', cast((10 * (1 - ci.benefit_discount)) as STRING), '折')
+        when '3202' then concat('满', cast(ci.condition_num as STRING), '件打', cast((ci.benefit_discount * 10) as STRING), '折')
         when '3203' then concat('减', cast(ci.benefit_amount as STRING), '元')
     end as benefit_rule,
     ci.create_time,

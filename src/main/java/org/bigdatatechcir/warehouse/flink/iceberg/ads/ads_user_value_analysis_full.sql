@@ -1,4 +1,4 @@
-SET 'execution.checkpointing.interval' = '100s';
+﻿SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
 SET 'table.exec.mini-batch.allow-latency' = '60s';
@@ -109,23 +109,23 @@ SELECT
         ELSE CAST(0 AS DECIMAL(16, 2))
     END AS average_order_amount,
     CASE
-        WHEN b.order_count_td > 1 THEN CAST(DATEDIFF(b.order_last_date, b.order_first_date) / (b.order_count_td - 1) AS BIGINT)
+        WHEN b.order_count_td > 1 THEN CAST(TIMESTAMPDIFF(DAY, b.order_first_date, b.order_last_date) / (b.order_count_td - 1) AS BIGINT)
         ELSE NULL
     END AS purchase_cycle_days,
     CAST(
         CASE
-            WHEN DATEDIFF(cp.cur_date, b.register_date) < 0 THEN 0
-            ELSE DATEDIFF(cp.cur_date, b.register_date)
+            WHEN TIMESTAMPDIFF(DAY, b.register_date, cp.cur_date) < 0 THEN 0
+            ELSE TIMESTAMPDIFF(DAY, b.register_date, cp.cur_date)
         END
         AS BIGINT
     ) AS account_days,
     CAST(
         CASE
-            WHEN b.order_count_td > 0 AND GREATEST(DATEDIFF(cp.cur_date, b.register_date), 1) > 0
+            WHEN b.order_count_td > 0 AND GREATEST(TIMESTAMPDIFF(DAY, b.register_date, cp.cur_date), 1) > 0
             THEN
                 (
                     (CAST(b.order_amount_td AS DOUBLE) / CAST(b.order_count_td AS DOUBLE))
-                    * (CAST(b.order_count_td AS DOUBLE) * CAST(365 AS DOUBLE) / CAST(GREATEST(DATEDIFF(cp.cur_date, b.register_date), 1) AS DOUBLE))
+                    * (CAST(b.order_count_td AS DOUBLE) * CAST(365 AS DOUBLE) / CAST(GREATEST(TIMESTAMPDIFF(DAY, b.register_date, cp.cur_date), 1) AS DOUBLE))
                     * CAST(3 AS DOUBLE)
                 )
             ELSE CAST(0 AS DOUBLE)
@@ -133,10 +133,10 @@ SELECT
         AS DECIMAL(16, 2)
     ) AS life_time_value,
     CASE
-        WHEN DATEDIFF(cp.cur_date, b.order_last_date) <= 30 THEN 5
-        WHEN DATEDIFF(cp.cur_date, b.order_last_date) <= 60 THEN 4
-        WHEN DATEDIFF(cp.cur_date, b.order_last_date) <= 90 THEN 3
-        WHEN DATEDIFF(cp.cur_date, b.order_last_date) <= 180 THEN 2
+        WHEN TIMESTAMPDIFF(DAY, b.order_last_date, cp.cur_date) <= 30 THEN 5
+        WHEN TIMESTAMPDIFF(DAY, b.order_last_date, cp.cur_date) <= 60 THEN 4
+        WHEN TIMESTAMPDIFF(DAY, b.order_last_date, cp.cur_date) <= 90 THEN 3
+        WHEN TIMESTAMPDIFF(DAY, b.order_last_date, cp.cur_date) <= 180 THEN 2
         ELSE 1
     END AS recency_score,
     CASE
@@ -206,12 +206,12 @@ SELECT
         ELSE '流失风险'
     END AS user_value_level,
     CASE
-        WHEN DATEDIFF(cp.cur_date, s.order_last_date) <= 30 OR DATEDIFF(cp.cur_date, s.login_last_date) <= 7 THEN '活跃'
-        WHEN DATEDIFF(cp.cur_date, s.order_last_date) <= 90 OR DATEDIFF(cp.cur_date, s.login_last_date) <= 30 THEN '沉默'
+        WHEN TIMESTAMPDIFF(DAY, s.order_last_date, cp.cur_date) <= 30 OR TIMESTAMPDIFF(DAY, s.login_last_date, cp.cur_date) <= 7 THEN '活跃'
+        WHEN TIMESTAMPDIFF(DAY, s.order_last_date, cp.cur_date) <= 90 OR TIMESTAMPDIFF(DAY, s.login_last_date, cp.cur_date) <= 30 THEN '沉默'
         ELSE '流失'
     END AS active_status,
     CASE
-        WHEN DATEDIFF(cp.cur_date, s.order_first_date) <= 30 AND s.order_count_td <= 2 THEN '新用户'
+        WHEN TIMESTAMPDIFF(DAY, s.order_first_date, cp.cur_date) <= 30 AND s.order_count_td <= 2 THEN '新用户'
         WHEN s.previous_rfm_score <= 6 AND s.recency_score >= 4 THEN '回流'
         WHEN s.recency_score >= 4 AND s.frequency_score >= 4 THEN '成熟期'
         WHEN s.recency_score >= 4 AND s.frequency_score >= 2 THEN '成长期'

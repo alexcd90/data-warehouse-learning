@@ -48,10 +48,6 @@ CREATE TABLE IF NOT EXISTS iceberg_dwd.dwd_traffic_page_view_full(
     'warehouse' = 'hdfs://192.168.244.129:9000/user/hive/warehouse/'
 );
 
-ALTER TABLE iceberg_dwd.dwd_traffic_page_view_full SET (
-    'sink.parallelism' = '10'
-    );
-
 INSERT INTO iceberg_dwd.dwd_traffic_page_view_full /*+ OPTIONS('upsert-enabled' = 'true') */(
     id,
     k1,
