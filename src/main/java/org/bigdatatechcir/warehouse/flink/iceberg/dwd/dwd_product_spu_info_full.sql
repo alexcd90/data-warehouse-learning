@@ -90,7 +90,7 @@ SELECT
     COALESCE(CAST(sp.category3_id AS STRING), '') AS category3_id,
     COALESCE(c3.name, '') AS category3_name,
     COALESCE(img.default_img, '') AS default_img,
-    DATE_FORMAT(CURRENT_TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS create_time,
+    CONCAT('${pdate}', ' 00:00:00') AS create_time,
     COALESCE(sa.sale_attrs, '') AS sale_attrs,
     COALESCE(img.images, '') AS images,
     COALESCE(po.posters, '') AS posters

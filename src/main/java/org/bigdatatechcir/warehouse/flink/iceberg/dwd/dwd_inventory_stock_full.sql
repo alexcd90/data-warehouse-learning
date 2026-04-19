@@ -72,7 +72,7 @@ SELECT
         END
     ) AS stock_name,
     '0' AS is_default,
-    DATE_FORMAT(CURRENT_TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS create_time
+    CONCAT('${pdate}', ' 00:00:00') AS create_time
 FROM iceberg_ods.ods_ware_sku_full ws
 LEFT JOIN iceberg_ods.ods_ware_info_full wi
     ON ws.warehouse_id = wi.id

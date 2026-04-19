@@ -76,8 +76,8 @@ SELECT
     COALESCE(ua.consignee, '') AS consignee,
     COALESCE(ua.phone_num, '') AS phone_num,
     COALESCE(ua.is_default, '') AS is_default,
-    DATE_FORMAT(CURRENT_TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS create_time,
-    DATE_FORMAT(CURRENT_TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS operate_time,
+    CONCAT('${pdate}', ' 00:00:00') AS create_time,
+    CONCAT('${pdate}', ' 00:00:00') AS operate_time,
     CAST(NULL AS STRING) AS postal_code,
     CONCAT_WS(' ', bp.name, bp.area_code, bp.iso_code, ua.user_address) AS full_address
 FROM iceberg_ods.ods_user_address_full ua

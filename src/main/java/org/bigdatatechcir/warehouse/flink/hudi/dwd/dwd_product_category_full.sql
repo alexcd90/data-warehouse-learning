@@ -59,7 +59,7 @@ SELECT
     CAST(NULL AS STRING) AS parent_name,
     CAST(id AS STRING) AS category_path,
     name AS category_path_name,
-    DATE_FORMAT(CURRENT_TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS create_time
+    CONCAT('${pdate}', ' 00:00:00') AS create_time
 FROM hudi_ods.ods_base_category1_full
 UNION ALL
 SELECT
@@ -72,7 +72,7 @@ SELECT
     c1.name AS parent_name,
     CONCAT(CAST(c2.category1_id AS STRING), '-', CAST(c2.id AS STRING)) AS category_path,
     CONCAT(c1.name, '-', c2.name) AS category_path_name,
-    DATE_FORMAT(CURRENT_TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS create_time
+    CONCAT('${pdate}', ' 00:00:00') AS create_time
 FROM hudi_ods.ods_base_category2_full c2
 LEFT JOIN hudi_ods.ods_base_category1_full c1
     ON c2.category1_id = c1.id
@@ -93,7 +93,7 @@ SELECT
         CAST(c3.id AS STRING)
     ) AS category_path,
     CONCAT(c1.name, '-', c2.name, '-', c3.name) AS category_path_name,
-    DATE_FORMAT(CURRENT_TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS create_time
+    CONCAT('${pdate}', ' 00:00:00') AS create_time
 FROM hudi_ods.ods_base_category3_full c3
 LEFT JOIN hudi_ods.ods_base_category2_full c2
     ON c3.category2_id = c2.id
