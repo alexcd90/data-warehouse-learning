@@ -105,7 +105,17 @@ from
                             model,
                             operate_system,
                             ts,
-                            concat(mid_id,'-',CAST(LAST_VALUE(session_start_point) over (partition by mid_id order by ts) as STRING)) session_id
+                            concat(
+                                mid_id,
+                                '-',
+                                CAST(
+                                    MAX(session_start_point) over (
+                                        partition by mid_id
+                                        order by ts
+                                        rows between unbounded preceding and current row
+                                    ) as STRING
+                                )
+                            ) session_id
                         from
                             (
                                 select
@@ -119,9 +129,11 @@ from
                                     common_md model,
                                     common_os operate_system,
                                     ts,
-                                    ts session_start_point
+                                    case
+                                        when page_last_page_id is null then ts
+                                        else cast(null as BIGINT)
+                                    end session_start_point
                                 from hudi_ods.ods_log_inc /*+ OPTIONS('read.streaming.enabled' = 'false') */
-                                where  page_last_page_id is not null
                             )t1
                     )t2
                 where user_id is not null

@@ -72,51 +72,86 @@ INSERT INTO hudi_dwd.dwd_traffic_page_view_full(
     during_time
     )
 select
-    id,
-    k1,
-    province_id,
-    brand,
-    channel,
-    is_new,
-    model,
-    mid_id,
-    operate_system,
-    user_id,
-    version_code,
-    page_item,
-    page_item_type,
-    page_last_page_id,
-    page_page_id,
-    page_source_type,
-    DATE_FORMAT(FROM_UNIXTIME(cast(ts / 1000 as BIGINT)), 'yyyy-MM-dd') date_id,
-    DATE_FORMAT(FROM_UNIXTIME(cast(ts / 1000 as BIGINT)), 'yyyy-MM-dd HH:mm:ss') view_time,
-    concat(mid_id,'-',CAST(LAST_VALUE(session_start_point) over (partition by mid_id order by ts) as STRING)) session_id,
-    page_during_time
+    log.id,
+    log.k1,
+    bp.province_id,
+    log.brand,
+    log.channel,
+    log.is_new,
+    log.model,
+    log.mid_id,
+    log.operate_system,
+    log.user_id,
+    log.version_code,
+    log.page_item,
+    log.page_item_type,
+    log.page_last_page_id,
+    log.page_page_id,
+    log.page_source_type,
+    DATE_FORMAT(FROM_UNIXTIME(cast(log.ts / 1000 as BIGINT)), 'yyyy-MM-dd') date_id,
+    DATE_FORMAT(FROM_UNIXTIME(cast(log.ts / 1000 as BIGINT)), 'yyyy-MM-dd HH:mm:ss') view_time,
+    log.session_id,
+    log.page_during_time
 from
     (
         select
             id,
             k1,
-            common_ar area_code,
-            common_ba brand,
-            common_ch channel,
-            common_is_new is_new,
-            common_md model,
-            common_mid mid_id,
-            common_os operate_system,
-            common_uid user_id,
-            common_vc version_code,
+            area_code,
+            brand,
+            channel,
+            is_new,
+            model,
+            mid_id,
+            operate_system,
+            user_id,
+            version_code,
             page_during_time,
-            page_item ,
-            page_item_type ,
+            page_item,
+            page_item_type,
             page_last_page_id,
             page_page_id,
             page_source_type,
             ts,
-            ts session_start_point
-        from hudi_ods.ods_log_inc /*+ OPTIONS('read.streaming.enabled' = 'false') */
-        where  page_during_time is not null
-        and page_page_id is not null
+            concat(
+                mid_id,
+                '-',
+                CAST(
+                    MAX(session_start_point) over (
+                        partition by mid_id
+                        order by ts
+                        rows between unbounded preceding and current row
+                    ) as STRING
+                )
+            ) session_id
+        from (
+            select
+                id,
+                k1,
+                common_ar area_code,
+                common_ba brand,
+                common_ch channel,
+                common_is_new is_new,
+                common_md model,
+                common_mid mid_id,
+                common_os operate_system,
+                common_uid user_id,
+                common_vc version_code,
+                page_during_time,
+                page_item,
+                page_item_type,
+                page_last_page_id,
+                page_page_id,
+                page_source_type,
+                ts,
+                case
+                    when page_last_page_id is null then ts
+                    else cast(null as BIGINT)
+                end session_start_point
+            from hudi_ods.ods_log_inc /*+ OPTIONS('read.streaming.enabled' = 'false') */
+            where page_during_time is not null
+              and page_page_id is not null
+        ) t1
     )log
         left join
     (
