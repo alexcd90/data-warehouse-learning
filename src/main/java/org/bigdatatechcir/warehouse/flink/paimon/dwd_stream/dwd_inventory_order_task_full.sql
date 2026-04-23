@@ -1,4 +1,5 @@
-﻿SET 'table.dynamic-table-options.enabled' = 'true';
+SET 'table.dynamic-table-options.enabled' = 'true';
+SET 'execution.runtime-mode' = 'streaming';
 SET 'execution.checkpointing.interval' = '100s';
 SET 'table.exec.state.ttl' = '8640000';
 SET 'table.exec.mini-batch.enabled' = 'true';
