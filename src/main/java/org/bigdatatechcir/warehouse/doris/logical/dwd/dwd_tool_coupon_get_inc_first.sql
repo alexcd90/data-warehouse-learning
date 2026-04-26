@@ -29,9 +29,8 @@ select
     user_id,                                       -- 用户ID
     date_format(get_time,'yyyy-MM-dd') date_id,    -- 将时间戳转换为日期ID
     get_time                                       -- 领取时间
-from ods.ods_coupon_use_full                       -- 数据来源：优惠券使用记录表
+from ods.ods_coupon_use_full; -- 数据来源：优惠券使用记录表
 -- 注：首次加载不使用k1过滤，加载所有历史数据
-
 /*
  * 设计说明:
  * 1. 首次加载特点:

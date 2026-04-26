@@ -30,8 +30,7 @@ select
     date_format(create_time,'yyyy-MM-dd') date_id, -- 将时间戳转换为日期ID格式
     create_time                                -- 收藏创建时间
 from ods.ods_favor_info_inc
-where k1=date('${pdate}')                     -- 按分区日期过滤，只处理当天数据
-
+where k1=date('${pdate}');                    -- 按分区日期过滤，只处理当天数据
 /*
  * 设计说明:
  * 1. 增量加载策略:

@@ -30,9 +30,8 @@ select
     sku_id,                                    -- 商品SKU ID，关联商品维度
     date_format(create_time,'yyyy-MM-dd') date_id, -- 将时间戳转换为日期ID格式
     create_time                                -- 收藏创建时间
-from ods.ods_favor_info_full
+from ods.ods_favor_info_full;
 -- 注：首次加载不使用k1过滤，加载全量历史数据
-
 /*
  * 设计说明:
  * 1. 首次加载特点:

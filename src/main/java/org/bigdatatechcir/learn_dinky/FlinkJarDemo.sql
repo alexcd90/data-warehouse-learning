@@ -5,7 +5,7 @@ EXECUTE JAR WITH (
 'uri'='rs:/jar/flink/demo/SocketWindowWordCount.jar',
 'main-class'='org.apache.flink.streaming.examples.socket',
 'args'=' --hostname localhost ',
-'parallelism'='',
+'parallelism'=''
 );
 
 -- 样例2

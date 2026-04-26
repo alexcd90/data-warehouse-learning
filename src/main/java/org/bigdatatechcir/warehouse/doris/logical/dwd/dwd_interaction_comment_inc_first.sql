@@ -39,9 +39,8 @@ select
     dic.dic_name as appraise_name               -- 评价名称(好评/中评/差评)
 from ods.ods_comment_info_full ci
 left join ods.ods_base_dic_full dic             -- 关联字典表转换评价代码
-on ci.appraise = dic.dic_code
+on ci.appraise = dic.dic_code;
 -- 注：首次加载不使用k1过滤，加载全量历史数据
-
 /*
  * 设计说明:
  * 1. 首次加载特点:

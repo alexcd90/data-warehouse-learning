@@ -30,8 +30,7 @@ select
     date_format(get_time,'yyyy-MM-dd') date_id,    -- 将时间戳转换为日期ID
     get_time                                       -- 领取时间
 from ods.ods_coupon_use_full                       -- 数据来源：优惠券使用记录表
-where k1=date('${pdate}')                          -- 按分区日期过滤，只处理当天数据
-
+where k1=date('${pdate}');                         -- 按分区日期过滤，只处理当天数据
 /*
  * 设计说明:
  * 1. 每日增量加载策略:

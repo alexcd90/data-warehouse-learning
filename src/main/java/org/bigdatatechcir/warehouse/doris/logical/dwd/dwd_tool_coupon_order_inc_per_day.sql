@@ -34,8 +34,7 @@ select
     using_time                                  -- 优惠券使用时间（下单时间）
 from ods.ods_coupon_use_full
 where using_time is not null                    -- 筛选已使用(下单)的优惠券记录
-and k1=date('${pdate}')                         -- 按分区日期筛选，只处理当天数据
-
+and k1=date('${pdate}');                        -- 按分区日期筛选，只处理当天数据
 /*
  * 设计说明:
  * 1. 每日增量加载特点:
